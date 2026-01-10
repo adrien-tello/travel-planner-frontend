@@ -1,0 +1,36 @@
+{
+  "expo": {
+    "name": "Wanderlust",
+    "slug": "wanderlust",
+    "version": "1.0.0",
+    "assetBundlePatterns": ["**/*"],
+    "plugins": [
+      "expo-router",
+      [
+        "expo-location",
+        {
+          "locationAlwaysAndWhenInUsePermission": "Allow Wanderlust to use your location to show nearby attractions and optimize your trips."
+        }
+      ]
+    ],
+    "scheme": "wanderlust",
+    "platforms": ["ios", "android", "web"],
+    "ios": {
+      "bundleIdentifier": "com.wanderlust.app",
+      "config": {
+        "googleMapsApiKey": "YOUR_GOOGLE_MAPS_API_KEY"
+      }
+    },
+    "android": {
+      "package": "com.wanderlust.app",
+      "config": {
+        "googleMaps": {
+          "apiKey": "YOUR_GOOGLE_MAPS_API_KEY"
+        }
+      }
+    },
+    "extra": {
+      "BACKEND_ENDPOINT": "https://39e470edf0ba.ngrok-free.app/api"
+    }
+  }
+}
