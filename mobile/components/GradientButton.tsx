@@ -13,7 +13,22 @@ interface GradientButtonProps {
   textStyle?: TextStyle
 }
 
-export const GradientButton: React.FC<GradientButtonProps> = ({
+import React from "react"
+import { TouchableOpacity, Text, StyleSheet, ViewStyle, TextStyle, ActivityIndicator } from "react-native"
+import { LinearGradient } from "expo-linear-gradient"
+import { colors, borderRadius, spacing, shadows } from "../theme/colors"
+
+interface GradientButtonProps {
+  title: string
+  onPress: () => void
+  gradient?: readonly [string, string, ...string[]]
+  disabled?: boolean
+  loading?: boolean
+  style?: ViewStyle
+  textStyle?: TextStyle
+}
+
+export function GradientButton({
   title,
   onPress,
   gradient = colors.gradientPurple,
@@ -21,7 +36,7 @@ export const GradientButton: React.FC<GradientButtonProps> = ({
   loading = false,
   style,
   textStyle,
-}) => {
+}: GradientButtonProps) {
   return (
     <TouchableOpacity
       onPress={onPress}

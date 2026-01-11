@@ -3,6 +3,7 @@ import helmet from "helmet";
 import dotenv from "dotenv";
 import authRoutes from "../src/routes/auth.route"
 import preferencesRoutes from "../src/routes/preferences.route"
+import aiTripRoutes from "../src/routes/ai-trip.route"
 import { requestLogger } from "../middleware/requestLogger";
 
 
@@ -41,6 +42,7 @@ app.get("/health", (req: Request, res: Response) => {
 // Definning the route
 app.use("/api/auth", authRoutes)
 app.use("/api/preferences", preferencesRoutes)
+app.use("/api/ai-trips", aiTripRoutes)
 
 
 
