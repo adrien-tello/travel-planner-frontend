@@ -4,8 +4,6 @@ import authApi from "../api/auth.api";
 import { ApiError } from "../api/types";
 import { clearAuthData, saveToken, saveUserData, getToken } from "../utils/storage";
 import { showToast } from "../utils/toast";
-import { router } from "expo-router";
-import OnboardingScreen from "../screens/auth/onboarding";
 
 
 // --- REGISTER HOOK ---

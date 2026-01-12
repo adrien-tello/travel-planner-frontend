@@ -1,9 +1,11 @@
 import express, { Express, Request, Response } from "express";
 import helmet from "helmet";
+import cors from "cors";
 import dotenv from "dotenv";
 import authRoutes from "../src/routes/auth.route"
 import preferencesRoutes from "../src/routes/preferences.route"
 import aiTripRoutes from "../src/routes/ai-trip.route"
+import itineraryRoutes from "../src/routes/itinerary.route"
 import { requestLogger } from "../middleware/requestLogger";
 
 
@@ -18,6 +20,14 @@ const PORT = process.env.PORT || 3000;
 app.use(requestLogger); // Log all requests
 // Security
 app.use(helmet());
+
+// CORS
+app.use(cors({
+  origin: process.env.NODE_ENV === 'production' 
+    ? ['https://your-domain.com'] 
+    : ['http://localhost:3000', 'http://localhost:19006'],
+  credentials: true
+}));
 
 // Body parsing
 app.use(express.json());
@@ -43,6 +53,7 @@ app.get("/health", (req: Request, res: Response) => {
 app.use("/api/auth", authRoutes)
 app.use("/api/preferences", preferencesRoutes)
 app.use("/api/ai-trips", aiTripRoutes)
+app.use("/api/itinerary", itineraryRoutes)
 
 
 

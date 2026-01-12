@@ -11,6 +11,9 @@ export interface TripSuggestion {
   bestTimeToVisit: string;
   activities: string[];
   matchScore: number;
+  hotels?: any[];
+  photos?: string[];
+  localAttractions?: any[];
 }
 
 export const aiTripApi = {

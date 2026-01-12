@@ -2,14 +2,13 @@ import React from "react";
 import axios, { AxiosError } from "axios";
 import { getToken } from "../utils/storage";
 import { showToast } from "../utils/toast";
-import { router } from "expo-router";
 import { ApiError } from "./types";
 import Constants from "expo-constants";
 
 
 const BASE_URL =
   Constants.expoConfig?.extra?.BACKEND_ENDPOINT ||
-  "https://0a9e379add4b.ngrok-free.app/api";
+  "http://localhost:3000/api";
 
 export const apiClient = axios.create({
   baseURL: BASE_URL,
@@ -79,19 +78,14 @@ apiClient.interceptors.response.use(
           try {
             const { clearAuthData } = await import("../utils/storage");
             await clearAuthData();
-
-            // Navigate immediately on auth expiry so splash/loading shows without delay
-            router.replace("/screens/(auth)/login");
+            console.log("Auth data cleared, user should be redirected to login");
           } catch (e) {
             console.error("Error during 401 handling:", e);
           } finally {
-            // Allow future redirects after navigation completes
             setTimeout(() => {
               isRedirectingToLogin = false;
             }, 500);
           }
-        } else {
-          console.log("Redirect to login already in progress, skipping duplicate redirect.");
         }
       }
 

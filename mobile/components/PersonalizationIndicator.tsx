@@ -1,36 +1,30 @@
 import React from "react"
-import { View, Text, StyleSheet, TextStyle } from "react-native"
-import { Star } from "react-native-feather"
-import { LinearGradient } from "expo-linear-gradient"
+import { View, Text, StyleSheet } from "react-native"
 import { colors, spacing, typography, borderRadius } from "../theme/colors"
 
 interface PersonalizationIndicatorProps {
   score: number
-  label?: string
+  label: string
   showProgress?: boolean
 }
 
-export const PersonalizationIndicator: React.FC<PersonalizationIndicatorProps> = ({
-  score,
-  label = "Personalization Match",
-  showProgress = true,
+export const PersonalizationIndicator: React.FC<PersonalizationIndicatorProps> = ({ 
+  score, 
+  label, 
+  showProgress = false 
 }) => {
   return (
     <View style={styles.container}>
       <View style={styles.header}>
-        <Star width={16} height={16} color={colors.primary} strokeWidth={2} />
         <Text style={styles.label}>{label}</Text>
         <Text style={styles.score}>{score}%</Text>
       </View>
       
       {showProgress && (
-        <View style={styles.progressBar}>
-          <LinearGradient
-            colors={colors.gradientPurple as readonly [string, string, ...string[]]}
-            start={{ x: 0, y: 0 }}
-            end={{ x: 1, y: 0 }}
-            style={[styles.progressFill, { width: `${score}%` }]}
-          />
+        <View style={styles.progressContainer}>
+          <View style={styles.progressBar}>
+            <View style={[styles.progressFill, { width: `${score}%` }]} />
+          </View>
         </View>
       )}
     </View>
@@ -39,39 +33,38 @@ export const PersonalizationIndicator: React.FC<PersonalizationIndicatorProps> =
 
 const styles = StyleSheet.create({
   container: {
-    backgroundColor: colors.primaryLight + "10",
-    borderRadius: borderRadius.md,
+    backgroundColor: colors.primaryLight + "15",
     padding: spacing.md,
+    borderRadius: borderRadius.md,
     borderWidth: 1,
     borderColor: colors.primaryLight + "30",
   },
   header: {
     flexDirection: "row",
+    justifyContent: "space-between",
     alignItems: "center",
-    gap: spacing.sm,
   },
   label: {
-    ...(typography.caption as TextStyle),
-    color: colors.primary,
+    ...typography.bodySmall,
+    color: colors.textSecondary,
     fontWeight: "600",
-    flex: 1,
-    textTransform: "uppercase",
-    letterSpacing: 0.5,
   },
   score: {
-    ...(typography.bodyMedium as TextStyle),
+    ...typography.h4,
     color: colors.primary,
     fontWeight: "700",
   },
+  progressContainer: {
+    marginTop: spacing.sm,
+  },
   progressBar: {
     height: 4,
-    backgroundColor: colors.primaryLight + "20",
+    backgroundColor: colors.border,
     borderRadius: 2,
-    marginTop: spacing.sm,
     overflow: "hidden",
   },
   progressFill: {
     height: "100%",
-    borderRadius: 2,
+    backgroundColor: colors.primary,
   },
 })

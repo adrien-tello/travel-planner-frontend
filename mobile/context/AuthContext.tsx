@@ -1,7 +1,7 @@
-import React, { createContext, useContext, useState, ReactNode } from "react"
+import React, { createContext, useContext, useState, useEffect, ReactNode } from "react"
 import { authApi } from "../api/auth.api"
 import { LoginDTO, RegisterDTO } from "../api/types"
-import { saveToken, saveUserData, clearAuthData, markOnboardingComplete } from "../utils/storage"
+import { saveToken, saveUserData, clearAuthData, markOnboardingComplete, getToken, hasSeenOnboarding } from "../utils/storage"
 
 type AuthContextType = {
   isAuthenticated: boolean
@@ -25,6 +25,22 @@ export const useAuth = () => {
 export const AuthProvider = ({ children }: { children: ReactNode }) => {
   const [isAuthenticated, setIsAuthenticated] = useState(false)
   const [isOnboarded, setIsOnboarded] = useState(false)
+
+  useEffect(() => {
+    initializeAuth()
+  }, [])
+
+  const initializeAuth = async () => {
+    try {
+      const token = await getToken()
+      const onboardingComplete = await hasSeenOnboarding()
+      
+      setIsAuthenticated(!!token)
+      setIsOnboarded(onboardingComplete)
+    } catch (error) {
+      console.error('Auth initialization error:', error)
+    }
+  }
 
   const signIn = async (credentials: LoginDTO) => {
     const authData = await authApi.login(credentials)

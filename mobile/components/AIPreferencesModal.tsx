@@ -3,21 +3,20 @@ import {
   View,
   Text,
   StyleSheet,
-  TouchableOpacity,
   Modal,
+  TouchableOpacity,
   ScrollView,
   TextStyle,
 } from "react-native"
-import { X, Zap } from "react-native-feather"
+import { X, Check } from "react-native-feather"
 import { LinearGradient } from "expo-linear-gradient"
 import { colors, spacing, typography, borderRadius, shadows } from "../theme/colors"
 import { GradientButton } from "./GradientButton"
-import { UserPreferences } from "../store/tripPlannerStore"
 
 interface AIPreferencesModalProps {
   visible: boolean
   onClose: () => void
-  onComplete: (preferences: UserPreferences) => void
+  onComplete: (preferences: any) => void
 }
 
 export const AIPreferencesModal: React.FC<AIPreferencesModalProps> = ({
@@ -25,511 +24,242 @@ export const AIPreferencesModal: React.FC<AIPreferencesModalProps> = ({
   onClose,
   onComplete,
 }) => {
-  const [step, setStep] = useState(1)
-  const [preferences, setPreferences] = useState<UserPreferences>({
-    budget: "moderate",
-    pace: "moderate",
-    interests: [],
-    accommodation: "mid-range",
-    dining: "mixed",
-  })
+  const [travelStyle, setTravelStyle] = useState("")
+  const [budgetRange, setBudgetRange] = useState("")
+  const [interests, setInterests] = useState<string[]>([])
 
-  const budgetOptions = [
-    { id: "budget", label: "Budget", icon: "💰", description: "Smart spending" },
-    { id: "moderate", label: "Moderate", icon: "💳", description: "Balanced comfort" },
-    { id: "luxury", label: "Luxury", icon: "💎", description: "Premium experience" },
+  const travelStyles = [
+    { id: "budget", label: "Budget Traveler", desc: "Cost-effective options" },
+    { id: "moderate", label: "Moderate", desc: "Balance of comfort & cost" },
+    { id: "luxury", label: "Luxury", desc: "Premium experiences" },
   ]
 
-  const paceOptions = [
-    { id: "relaxed", label: "Relaxed", icon: "🌴", description: "Take it slow" },
-    { id: "moderate", label: "Balanced", icon: "⚖️", description: "Mix activities & rest" },
-    { id: "fast", label: "Fast-Paced", icon: "⚡", description: "See everything" },
+  const budgetRanges = [
+    { id: "low", label: "$0-50/day", desc: "Budget-friendly" },
+    { id: "medium", label: "$50-150/day", desc: "Mid-range" },
+    { id: "high", label: "$150+/day", desc: "Premium" },
   ]
 
   const interestOptions = [
-    { id: "culture", label: "Culture", icon: "🎭" },
-    { id: "food", label: "Food", icon: "🍜" },
-    { id: "adventure", label: "Adventure", icon: "🏔️" },
-    { id: "relaxation", label: "Relaxation", icon: "🧘" },
-    { id: "shopping", label: "Shopping", icon: "🛍️" },
-    { id: "nightlife", label: "Nightlife", icon: "🎉" },
+    "Culture & History",
+    "Food & Dining",
+    "Adventure Sports",
+    "Nature & Wildlife",
+    "Art & Museums",
+    "Nightlife",
+    "Shopping",
+    "Photography",
   ]
-
-  const accommodationOptions = [
-    { id: "budget", label: "Budget", description: "Hostels & budget hotels" },
-    { id: "mid-range", label: "Mid-Range", description: "Comfortable hotels" },
-    { id: "luxury", label: "Luxury", description: "5-star hotels & resorts" },
-  ]
-
-  const diningOptions = [
-    { id: "local", label: "Local Eats", description: "Street food & local spots" },
-    { id: "mixed", label: "Mixed", description: "Variety of options" },
-    { id: "fine-dining", label: "Fine Dining", description: "Premium restaurants" },
-  ]
-
-  const handleNext = () => {
-    if (step < 4) {
-      setStep(step + 1)
-    } else {
-      onComplete(preferences)
-      onClose()
-      setStep(1)
-    }
-  }
-
-  const handleBack = () => {
-    if (step > 1) {
-      setStep(step - 1)
-    }
-  }
 
   const toggleInterest = (interest: string) => {
-    setPreferences(prev => ({
-      ...prev,
-      interests: prev.interests.includes(interest)
-        ? prev.interests.filter(i => i !== interest)
-        : [...prev.interests, interest]
-    }))
+    setInterests(prev =>
+      prev.includes(interest)
+        ? prev.filter(i => i !== interest)
+        : [...prev, interest]
+    )
   }
 
-  const renderStepContent = () => {
-    switch (step) {
-      case 1:
-        return (
-          <View style={styles.stepContent}>
-            <Text style={styles.stepTitle}>What's your travel budget? 💰</Text>
-            <Text style={styles.stepDescription}>This helps us recommend suitable options</Text>
-            {budgetOptions.map((option) => (
+  const handleComplete = () => {
+    onComplete({
+      travelStyle,
+      budgetRange,
+      interests,
+    })
+    onClose()
+  }
+
+  return (
+    <Modal visible={visible} animationType="slide" presentationStyle="pageSheet">
+      <View style={styles.container}>
+        <LinearGradient
+          colors={colors.gradientPurple}
+          start={{ x: 0, y: 0 }}
+          end={{ x: 1, y: 1 }}
+          style={styles.header}
+        >
+          <TouchableOpacity onPress={onClose} style={styles.closeButton}>
+            <X width={24} height={24} color={colors.white} />
+          </TouchableOpacity>
+          <Text style={styles.title}>Set Your Preferences</Text>
+          <Text style={styles.subtitle}>Help AI personalize your trips</Text>
+        </LinearGradient>
+
+        <ScrollView style={styles.content}>
+          <View style={styles.section}>
+            <Text style={styles.sectionTitle}>Travel Style</Text>
+            {travelStyles.map(style => (
               <TouchableOpacity
-                key={option.id}
+                key={style.id}
                 style={[
-                  styles.optionCard,
-                  preferences.budget === option.id && styles.optionCardSelected
+                  styles.option,
+                  travelStyle === style.id && styles.optionSelected,
                 ]}
-                onPress={() => setPreferences({ ...preferences, budget: option.id as any })}
+                onPress={() => setTravelStyle(style.id)}
               >
-                <Text style={styles.optionEmoji}>{option.icon}</Text>
                 <View style={styles.optionContent}>
-                  <Text style={[
-                    styles.optionLabel,
-                    preferences.budget === option.id && styles.optionLabelSelected
-                  ]}>
-                    {option.label}
-                  </Text>
-                  <Text style={styles.optionDescription}>{option.description}</Text>
+                  <Text style={styles.optionLabel}>{style.label}</Text>
+                  <Text style={styles.optionDesc}>{style.desc}</Text>
                 </View>
-                <View style={[
-                  styles.radio,
-                  preferences.budget === option.id && styles.radioSelected
-                ]}>
-                  {preferences.budget === option.id && <View style={styles.radioDot} />}
-                </View>
+                {travelStyle === style.id && (
+                  <Check width={20} height={20} color={colors.primary} />
+                )}
               </TouchableOpacity>
             ))}
           </View>
-        )
 
-      case 2:
-        return (
-          <View style={styles.stepContent}>
-            <Text style={styles.stepTitle}>What's your travel pace? ⚡</Text>
-            <Text style={styles.stepDescription}>How do you like to explore?</Text>
-            {paceOptions.map((option) => (
+          <View style={styles.section}>
+            <Text style={styles.sectionTitle}>Budget Range</Text>
+            {budgetRanges.map(budget => (
               <TouchableOpacity
-                key={option.id}
+                key={budget.id}
                 style={[
-                  styles.optionCard,
-                  preferences.pace === option.id && styles.optionCardSelected
+                  styles.option,
+                  budgetRange === budget.id && styles.optionSelected,
                 ]}
-                onPress={() => setPreferences({ ...preferences, pace: option.id as any })}
+                onPress={() => setBudgetRange(budget.id)}
               >
-                <Text style={styles.optionEmoji}>{option.icon}</Text>
                 <View style={styles.optionContent}>
-                  <Text style={[
-                    styles.optionLabel,
-                    preferences.pace === option.id && styles.optionLabelSelected
-                  ]}>
-                    {option.label}
-                  </Text>
-                  <Text style={styles.optionDescription}>{option.description}</Text>
+                  <Text style={styles.optionLabel}>{budget.label}</Text>
+                  <Text style={styles.optionDesc}>{budget.desc}</Text>
                 </View>
-                <View style={[
-                  styles.radio,
-                  preferences.pace === option.id && styles.radioSelected
-                ]}>
-                  {preferences.pace === option.id && <View style={styles.radioDot} />}
-                </View>
+                {budgetRange === budget.id && (
+                  <Check width={20} height={20} color={colors.primary} />
+                )}
               </TouchableOpacity>
             ))}
           </View>
-        )
 
-      case 3:
-        return (
-          <View style={styles.stepContent}>
-            <Text style={styles.stepTitle}>What interests you? 🎯</Text>
-            <Text style={styles.stepDescription}>Select all that apply</Text>
+          <View style={styles.section}>
+            <Text style={styles.sectionTitle}>Interests</Text>
             <View style={styles.interestsGrid}>
-              {interestOptions.map((option) => (
+              {interestOptions.map(interest => (
                 <TouchableOpacity
-                  key={option.id}
+                  key={interest}
                   style={[
                     styles.interestChip,
-                    preferences.interests.includes(option.id) && styles.interestChipSelected
+                    interests.includes(interest) && styles.interestChipSelected,
                   ]}
-                  onPress={() => toggleInterest(option.id)}
+                  onPress={() => toggleInterest(interest)}
                 >
-                  <Text style={styles.interestEmoji}>{option.icon}</Text>
-                  <Text style={[
-                    styles.interestLabel,
-                    preferences.interests.includes(option.id) && styles.interestLabelSelected
-                  ]}>
-                    {option.label}
+                  <Text
+                    style={[
+                      styles.interestText,
+                      interests.includes(interest) && styles.interestTextSelected,
+                    ]}
+                  >
+                    {interest}
                   </Text>
                 </TouchableOpacity>
               ))}
             </View>
           </View>
-        )
 
-      case 4:
-        return (
-          <View style={styles.stepContent}>
-            <Text style={styles.stepTitle}>Accommodation & Dining 🏨</Text>
-            <Text style={styles.stepDescription}>Your preferences for stay and food</Text>
-            
-            <Text style={styles.sectionLabel}>Accommodation</Text>
-            {accommodationOptions.map((option) => (
-              <TouchableOpacity
-                key={option.id}
-                style={[
-                  styles.optionCard,
-                  preferences.accommodation === option.id && styles.optionCardSelected
-                ]}
-                onPress={() => setPreferences({ ...preferences, accommodation: option.id as any })}
-              >
-                <View style={styles.optionContent}>
-                  <Text style={[
-                    styles.optionLabel,
-                    preferences.accommodation === option.id && styles.optionLabelSelected
-                  ]}>
-                    {option.label}
-                  </Text>
-                  <Text style={styles.optionDescription}>{option.description}</Text>
-                </View>
-                <View style={[
-                  styles.radio,
-                  preferences.accommodation === option.id && styles.radioSelected
-                ]}>
-                  {preferences.accommodation === option.id && <View style={styles.radioDot} />}
-                </View>
-              </TouchableOpacity>
-            ))}
-
-            <Text style={[styles.sectionLabel, { marginTop: spacing.lg }]}>Dining</Text>
-            {diningOptions.map((option) => (
-              <TouchableOpacity
-                key={option.id}
-                style={[
-                  styles.optionCard,
-                  preferences.dining === option.id && styles.optionCardSelected
-                ]}
-                onPress={() => setPreferences({ ...preferences, dining: option.id as any })}
-              >
-                <View style={styles.optionContent}>
-                  <Text style={[
-                    styles.optionLabel,
-                    preferences.dining === option.id && styles.optionLabelSelected
-                  ]}>
-                    {option.label}
-                  </Text>
-                  <Text style={styles.optionDescription}>{option.description}</Text>
-                </View>
-                <View style={[
-                  styles.radio,
-                  preferences.dining === option.id && styles.radioSelected
-                ]}>
-                  {preferences.dining === option.id && <View style={styles.radioDot} />}
-                </View>
-              </TouchableOpacity>
-            ))}
-          </View>
-        )
-
-      default:
-        return null
-    }
-  }
-
-  return (
-    <Modal
-      visible={visible}
-      animationType="slide"
-      transparent={true}
-      onRequestClose={onClose}
-    >
-      <View style={styles.modalOverlay}>
-        <View style={styles.modalContainer}>
-          {/* Header */}
-          <LinearGradient
-            colors={colors.gradientPurple}
-            start={{ x: 0, y: 0 }}
-            end={{ x: 1, y: 1 }}
-            style={styles.header}
-          >
-            <View style={styles.headerContent}>
-              <View style={styles.headerLeft}>
-                <Zap width={24} height={24} color={colors.white} strokeWidth={2} />
-                <Text style={styles.headerTitle}>AI Trip Planner</Text>
-              </View>
-              <TouchableOpacity onPress={onClose} style={styles.closeButton}>
-                <X width={24} height={24} color={colors.white} strokeWidth={2} />
-              </TouchableOpacity>
-            </View>
-            
-            {/* Progress Bar */}
-            <View style={styles.progressContainer}>
-              {[1, 2, 3, 4].map((i) => (
-                <View
-                  key={i}
-                  style={[
-                    styles.progressDot,
-                    i <= step && styles.progressDotActive
-                  ]}
-                />
-              ))}
-            </View>
-            <Text style={styles.stepIndicator}>Step {step} of 4</Text>
-          </LinearGradient>
-
-          {/* Content */}
-          <ScrollView
-            style={styles.content}
-            contentContainerStyle={styles.contentContainer}
-            showsVerticalScrollIndicator={false}
-          >
-            {renderStepContent()}
-          </ScrollView>
-
-          {/* Footer */}
-          <View style={styles.footer}>
-            {step > 1 && (
-              <TouchableOpacity
-                style={styles.backButton}
-                onPress={handleBack}
-              >
-                <Text style={styles.backButtonText}>Back</Text>
-              </TouchableOpacity>
-            )}
-            <GradientButton
-              title={step === 4 ? "Generate Trip Plan ✨" : "Continue"}
-              onPress={handleNext}
-              gradient={colors.gradientPurple}
-              style={styles.nextButton}
-            />
-          </View>
-        </View>
+          <GradientButton
+            title="Save Preferences"
+            onPress={handleComplete}
+            gradient={colors.gradientPurple}
+            style={styles.saveButton}
+            disabled={!travelStyle || !budgetRange}
+          />
+        </ScrollView>
       </View>
     </Modal>
   )
 }
 
 const styles = StyleSheet.create({
-  modalOverlay: {
+  container: {
     flex: 1,
-    backgroundColor: "rgba(0, 0, 0, 0.5)",
-    justifyContent: "flex-end",
-  },
-  modalContainer: {
     backgroundColor: colors.background,
-    borderTopLeftRadius: borderRadius.xxl,
-    borderTopRightRadius: borderRadius.xxl,
-    height: "90%",
-    ...shadows.xl,
   },
   header: {
-    paddingTop: spacing.xl,
-    paddingBottom: spacing.lg,
-    paddingHorizontal: spacing.xl,
-    borderTopLeftRadius: borderRadius.xxl,
-    borderTopRightRadius: borderRadius.xxl,
-  },
-  headerContent: {
-    flexDirection: "row",
-    justifyContent: "space-between",
+    paddingTop: spacing.xxxl,
+    paddingBottom: spacing.xl,
+    paddingHorizontal: spacing.lg,
     alignItems: "center",
-    marginBottom: spacing.lg,
-  },
-  headerLeft: {
-    flexDirection: "row",
-    alignItems: "center",
-    gap: spacing.sm,
-  },
-  headerTitle: {
-    ...(typography.h3 as TextStyle),
-    color: colors.white,
   },
   closeButton: {
-    width: 40,
-    height: 40,
-    borderRadius: borderRadius.md,
-    backgroundColor: "rgba(255, 255, 255, 0.2)",
-    justifyContent: "center",
-    alignItems: "center",
+    position: "absolute",
+    top: spacing.xxxl,
+    right: spacing.lg,
+    padding: spacing.sm,
   },
-  progressContainer: {
-    flexDirection: "row",
-    justifyContent: "center",
-    gap: spacing.sm,
+  title: {
+    ...(typography.h2 as TextStyle),
+    color: colors.white,
     marginBottom: spacing.sm,
   },
-  progressDot: {
-    width: 8,
-    height: 8,
-    borderRadius: 4,
-    backgroundColor: "rgba(255, 255, 255, 0.3)",
-  },
-  progressDotActive: {
-    backgroundColor: colors.white,
-    width: 32,
-  },
-  stepIndicator: {
-    ...(typography.caption as TextStyle),
+  subtitle: {
+    ...(typography.body as TextStyle),
     color: "rgba(255, 255, 255, 0.9)",
-    textAlign: "center",
-    textTransform: "uppercase",
-    letterSpacing: 1,
   },
   content: {
     flex: 1,
+    padding: spacing.lg,
   },
-  contentContainer: {
-    padding: spacing.xl,
+  section: {
+    marginBottom: spacing.xl,
   },
-  stepContent: {
-    gap: spacing.md,
-  },
-  stepTitle: {
-    ...(typography.h2 as TextStyle),
-    color: colors.textPrimary,
-    marginBottom: spacing.sm,
-  },
-  stepDescription: {
-    ...(typography.body as TextStyle),
-    color: colors.textSecondary,
-    marginBottom: spacing.lg,
-  },
-  sectionLabel: {
-    ...(typography.h4 as TextStyle),
+  sectionTitle: {
+    ...(typography.h3 as TextStyle),
     color: colors.textPrimary,
     marginBottom: spacing.md,
   },
-  optionCard: {
+  option: {
     flexDirection: "row",
     alignItems: "center",
+    justifyContent: "space-between",
     backgroundColor: colors.surface,
-    borderWidth: 2,
-    borderColor: colors.border,
-    borderRadius: borderRadius.lg,
     padding: spacing.lg,
-    gap: spacing.md,
-    marginBottom: spacing.md,
+    borderRadius: borderRadius.md,
+    marginBottom: spacing.sm,
+    borderWidth: 1,
+    borderColor: colors.border,
   },
-  optionCardSelected: {
+  optionSelected: {
     borderColor: colors.primary,
     backgroundColor: colors.primaryLight + "10",
-  },
-  optionEmoji: {
-    fontSize: 32,
   },
   optionContent: {
     flex: 1,
   },
   optionLabel: {
-    ...(typography.h4 as TextStyle),
+    ...(typography.body as TextStyle),
     color: colors.textPrimary,
+    fontWeight: "600",
     marginBottom: spacing.xs,
   },
-  optionLabelSelected: {
-    color: colors.primary,
-  },
-  optionDescription: {
+  optionDesc: {
     ...(typography.bodySmall as TextStyle),
     color: colors.textSecondary,
-  },
-  radio: {
-    width: 24,
-    height: 24,
-    borderRadius: 12,
-    borderWidth: 2,
-    borderColor: colors.border,
-    justifyContent: "center",
-    alignItems: "center",
-  },
-  radioSelected: {
-    borderColor: colors.primary,
-  },
-  radioDot: {
-    width: 12,
-    height: 12,
-    borderRadius: 6,
-    backgroundColor: colors.primary,
   },
   interestsGrid: {
     flexDirection: "row",
     flexWrap: "wrap",
-    gap: spacing.md,
+    gap: spacing.sm,
   },
   interestChip: {
-    flexDirection: "row",
-    alignItems: "center",
-    gap: spacing.sm,
-    paddingHorizontal: spacing.lg,
-    paddingVertical: spacing.md,
     backgroundColor: colors.surface,
-    borderWidth: 2,
+    paddingHorizontal: spacing.md,
+    paddingVertical: spacing.sm,
+    borderRadius: borderRadius.md,
+    borderWidth: 1,
     borderColor: colors.border,
-    borderRadius: borderRadius.full,
   },
   interestChipSelected: {
+    backgroundColor: colors.primary,
     borderColor: colors.primary,
-    backgroundColor: colors.primaryLight + "15",
   },
-  interestEmoji: {
-    fontSize: 20,
-  },
-  interestLabel: {
+  interestText: {
     ...(typography.bodySmall as TextStyle),
     color: colors.textPrimary,
     fontWeight: "600",
   },
-  interestLabelSelected: {
-    color: colors.primary,
+  interestTextSelected: {
+    color: colors.white,
   },
-  footer: {
-    flexDirection: "row",
-    paddingHorizontal: spacing.xl,
-    paddingVertical: spacing.lg,
-    gap: spacing.md,
-    borderTopWidth: 1,
-    borderTopColor: colors.border,
-    backgroundColor: colors.surface,
-  },
-  backButton: {
-    flex: 1,
-    paddingVertical: spacing.lg,
-    borderRadius: borderRadius.lg,
-    borderWidth: 2,
-    borderColor: colors.border,
-    alignItems: "center",
-    justifyContent: "center",
-  },
-  backButtonText: {
-    ...(typography.body as TextStyle),
-    color: colors.textPrimary,
-    fontWeight: "700",
-  },
-  nextButton: {
-    flex: 2,
+  saveButton: {
+    marginTop: spacing.lg,
+    marginBottom: spacing.xl,
   },
 })
