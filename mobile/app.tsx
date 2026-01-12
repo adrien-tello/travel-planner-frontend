@@ -8,6 +8,7 @@ import { MapPin, Compass, User } from "react-native-feather"
 import { AuthProvider, useAuth } from "./context/AuthContext"
 
 // Screens
+import LandingScreen from "./screens/auth/landing"
 import LoginScreen from "./screens/auth/login"
 import SignupScreen from "./screens/auth/signup"
 import OnboardingScreen from "./screens/auth/onboarding"
@@ -41,6 +42,7 @@ function AuthStack() {
         headerShown: false,
       }}
     >
+      <Stack.Screen name="Landing" component={LandingScreen} />
       <Stack.Screen name="Login" component={LoginScreen} />
       <Stack.Screen name="Signup" component={SignupScreen} />
     </Stack.Navigator>

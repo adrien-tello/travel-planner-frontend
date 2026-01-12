@@ -1,20 +1,5 @@
-import React from "react"
-import { TouchableOpacity, Text, StyleSheet, ViewStyle, TextStyle, ActivityIndicator } from "react-native"
-import { LinearGradient } from "expo-linear-gradient"
-import { colors, borderRadius, spacing, shadows } from "../theme/colors"
-
-interface GradientButtonProps {
-  title: string
-  onPress: () => void
-  gradient?: readonly [string, string, ...string[]]
-  disabled?: boolean
-  loading?: boolean
-  style?: ViewStyle
-  textStyle?: TextStyle
-}
-
-import React from "react"
-import { TouchableOpacity, Text, StyleSheet, ViewStyle, TextStyle, ActivityIndicator } from "react-native"
+import * as React from "react"
+import { TouchableOpacity, Text, StyleSheet, ViewStyle, TextStyle, ActivityIndicator, View } from "react-native"
 import { LinearGradient } from "expo-linear-gradient"
 import { colors, borderRadius, spacing, shadows } from "../theme/colors"
 
@@ -54,7 +39,7 @@ export function GradientButton({
         ]}
       >
         {loading ? (
-          <ActivityIndicator color={colors.white} />
+          <ActivityIndicator color={colors.white} size="small" />
         ) : (
           <Text style={[styles.text, textStyle]}>{title}</Text>
         )}
