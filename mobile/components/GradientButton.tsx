@@ -11,6 +11,7 @@ interface GradientButtonProps {
   loading?: boolean
   style?: ViewStyle
   textStyle?: TextStyle
+  accessibilityLabel?: string
 }
 
 export function GradientButton({
@@ -21,6 +22,7 @@ export function GradientButton({
   loading = false,
   style,
   textStyle,
+  accessibilityLabel,
 }: GradientButtonProps) {
   return (
     <TouchableOpacity
@@ -28,6 +30,7 @@ export function GradientButton({
       disabled={disabled || loading}
       activeOpacity={0.8}
       style={[styles.container, style]}
+      accessibilityLabel={accessibilityLabel}
     >
       <LinearGradient
         colors={gradient}
