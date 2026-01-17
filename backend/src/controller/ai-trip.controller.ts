@@ -1,4 +1,5 @@
-import { Request, Response } from "express";
+import { Response } from "express";
+import { AuthenticatedRequest } from "../types/express";
 import { AITripPlannerService } from "../service/ai-trip-planner.service";
 import { PreferenceService } from "../service/preferences.service";
 
@@ -6,7 +7,7 @@ const aiTripPlannerService = new AITripPlannerService();
 const preferenceService = new PreferenceService();
 
 export class AITripController {
-  async generateTripSuggestions(req: Request, res: Response) {
+  async generateTripSuggestions(req: AuthenticatedRequest, res: Response) {
     try {
       const userId = req.user!.userId;
 

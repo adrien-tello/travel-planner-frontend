@@ -1,4 +1,5 @@
 import { UserPreferences } from "../types/prefrences";
+import { OpenAIService } from "./openai.service";
 
 export interface TripSuggestion {
   id: string;
@@ -10,26 +11,30 @@ export interface TripSuggestion {
   bestTimeToVisit: string;
   activities: string[];
   matchScore: number;
-  hotels?: any[];
-  photos?: string[];
-  localAttractions?: any[];
+  climate: string;
+  overview: string;
+  localCuisine: string[];
+  transportation: string[];
+  tips: string[];
+  images: string[];
 }
 
 export class AITripPlannerService {
+  private openAIService = new OpenAIService();
+  private serpApiKey = process.env.SERP_API_KEY || 'demo';
   private geminiApiKey = process.env.GEMINI_API_KEY;
-  private serpApiKey = "demo"; // Using demo key from URLs
-  private googlePhotosApiBase = process.env.GOOGLE_PHOTO_API_KEY?.split('?')[0] || "https://serpapi.com/search.json";
+  private googlePhotosApiBase = process.env.GOOGLE_PHOTO_API_KEY?.split('?')[0] || 'https://serpapi.com/search.json';
 
   async generateTripSuggestions(preferences: UserPreferences): Promise<TripSuggestion[]> {
     try {
-      // Step 1: Get AI-generated destinations from Gemini
-      const aiDestinations = await this.getGeminiDestinations(preferences);
-      
-      // Step 2: Enhance each destination with real data
+      // Step 1: Generate destinations using OpenAI
+      const destinations = await this.generateDestinationsWithOpenAI(preferences);
+
+      // Step 2: Enhance each destination with detailed info and images
       const enhancedSuggestions = await Promise.all(
-        aiDestinations.map(dest => this.enhanceDestinationData(dest, preferences))
+        destinations.map(dest => this.enhanceDestinationWithOpenAI(dest, preferences))
       );
-      
+
       return enhancedSuggestions.filter(Boolean).slice(0, 5);
     } catch (error) {
       console.error('AI Trip Planning error:', error);
@@ -70,7 +75,7 @@ export class AITripPlannerService {
         hotels: hotels.slice(0, 3),
         photos: photos.slice(0, 5),
         localAttractions: attractions.slice(0, 5),
-        estimatedBudget: this.calculateBudget(destination, preferences, hotels)
+        estimatedBudget: this.calculateBudget(destination, preferences)
       };
     } catch (error) {
       console.error(`Error enhancing ${destination.destination}:`, error);
@@ -130,33 +135,75 @@ export class AITripPlannerService {
     }
   }
 
-  private calculateBudget(destination: any, preferences: UserPreferences, hotels: any[]): number {
+  private async generateDestinationsWithOpenAI(preferences: UserPreferences): Promise<any[]> {
+    const prompt = this.buildDestinationPrompt(preferences);
+
+    // Use OpenAI directly for destination generation
+    const OpenAI = require('openai');
+    const openai = new OpenAI({
+      apiKey: process.env.OPEN_AI_API_KEY,
+    });
+
+    const completion = await openai.chat.completions.create({
+      model: 'gpt-4o-mini',
+      messages: [{ role: 'user', content: prompt }],
+      temperature: 0.7,
+    });
+
+    const response = completion.choices[0].message.content || '[]';
+    return JSON.parse(response);
+  }
+
+  private async enhanceDestinationWithOpenAI(destination: any, preferences: UserPreferences): Promise<TripSuggestion> {
+    try {
+      // Get detailed destination info using OpenAI
+      const destinationInfo = await this.openAIService.getDestinationInfo(destination.destination.split(',')[0], destination.country);
+
+      // Generate images for the destination
+      const images = await this.openAIService.generateDestinationImages(
+        destination.destination.split(',')[0],
+        destination.country,
+        preferences.interests
+      );
+
+      return {
+        ...destination,
+        climate: destinationInfo.climate,
+        overview: destinationInfo.overview,
+        localCuisine: destinationInfo.localCuisine,
+        transportation: destinationInfo.transportation,
+        tips: destinationInfo.tips,
+        images,
+        estimatedBudget: this.calculateBudget(destination, preferences)
+      };
+    } catch (error) {
+      console.error(`Error enhancing ${destination.destination}:`, error);
+      return destination;
+    }
+  }
+
+  private calculateBudget(destination: any, preferences: UserPreferences): number {
     const baseBudget = {
-      low: { daily: 50, accommodation: 80 },
-      mid: { daily: 120, accommodation: 150 },
-      high: { daily: 250, accommodation: 300 }
+      low: { daily: 50 },
+      mid: { daily: 120 },
+      high: { daily: 250 }
     };
 
     const budget = baseBudget[preferences.budgetRange as keyof typeof baseBudget];
     const duration = destination.duration || 5;
-    
-    // Factor in actual hotel prices if available
-    const avgHotelPrice = hotels.length > 0 
-      ? hotels.reduce((sum, h) => sum + (h.price || budget.accommodation), 0) / hotels.length
-      : budget.accommodation;
 
-    return Math.round((budget.daily * duration) + (avgHotelPrice * duration));
+    return Math.round(budget.daily * duration);
   }
 
-  private buildGeminiPrompt(preferences: UserPreferences): string {
+  private buildDestinationPrompt(preferences: UserPreferences): string {
     return `As a travel expert, suggest 8 destinations based on these preferences:
-    
+
     Travel Style: ${preferences.travelStyle}
     Budget: ${preferences.budgetRange}
     Interests: ${preferences.interests.join(', ')}
     Group Size: ${preferences.planning?.groupSize || 1}
     Kids: ${preferences.planning?.travelWithKids || false}
-    
+
     Return JSON array:
     [{
       "id": "unique_id",
@@ -169,6 +216,30 @@ export class AITripPlannerService {
       "matchScore": 85
     }]`;
   }
+
+  private buildGeminiPrompt(preferences: UserPreferences): string {
+    return `As a travel expert, suggest 8 destinations based on these preferences:
+
+    Travel Style: ${preferences.travelStyle}
+    Budget: ${preferences.budgetRange}
+    Interests: ${preferences.interests.join(', ')}
+    Group Size: ${preferences.planning?.groupSize || 1}
+    Kids: ${preferences.planning?.travelWithKids || false}
+
+    Return JSON array:
+    [{
+      "id": "unique_id",
+      "destination": "City, Country",
+      "country": "Country",
+      "duration": 5,
+      "highlights": ["attraction1", "attraction2", "attraction3"],
+      "bestTimeToVisit": "Season",
+      "activities": ["activity1", "activity2", "activity3"],
+      "matchScore": 85
+    }]`;
+  }
+
+
 
   private parseAIResponse(response: string): any[] {
     try {
@@ -197,6 +268,12 @@ export class AITripPlannerService {
       bestTimeToVisit: "Year-round",
       activities: ["Sightseeing", "Food tours", "Cultural activities"],
       matchScore: 75,
+      climate: "Temperate climate with mild summers and cool winters",
+      overview: "A beautiful destination known for its rich history and culture.",
+      localCuisine: ["Local specialties", "Traditional dishes"],
+      transportation: ["Public transport", "Walking", "Taxis"],
+      tips: ["Check weather", "Book in advance", "Learn basic phrases"],
+      images: [],
     }));
   }
 }
