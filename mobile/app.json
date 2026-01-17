@@ -3,6 +3,7 @@
     "name": "Wanderlust",
     "slug": "wanderlust",
     "version": "1.0.0",
+    "icon":"./assets/image/logo.png",
     "assetBundlePatterns": ["**/*"],
     "plugins": [
       "expo-router",
@@ -11,21 +12,38 @@
         {
           "locationAlwaysAndWhenInUsePermission": "Allow Wanderlust to use your location to show nearby attractions and optimize your trips."
         }
-      ]
+      ],
+      [
+        "expo-notifications",
+        {
+          "icon": "./assets/images/wayfinder-splash-logo.png",
+          "color": "#3B82F6",
+          "sounds": []
+        }
+      ],
+      [
+        "@rnmapbox/maps",
+        {
+          "RNMapboxMapsImpl": "mapbox"
+        }
+      ],
+      "expo-secure-store",
+      "@react-native-community/datetimepicker",
+      "expo-font"
     ],
     "scheme": "wanderlust",
     "platforms": ["ios", "android", "web"],
     "ios": {
       "bundleIdentifier": "com.wanderlust.app",
       "config": {
-        "googleMapsApiKey": "YOUR_GOOGLE_MAPS_API_KEY"
+        "googleMapsApiKey": "GOOGLE_MAPS_API_KEY"
       }
     },
     "android": {
       "package": "com.wanderlust.app",
       "config": {
         "googleMaps": {
-          "apiKey": "YOUR_GOOGLE_MAPS_API_KEY"
+          "apiKey": "GOOGLE_MAPS_API_KEY"
         }
       }
     },

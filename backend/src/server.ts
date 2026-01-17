@@ -2,10 +2,12 @@ import express, { Express, Request, Response } from "express";
 import helmet from "helmet";
 import cors from "cors";
 import dotenv from "dotenv";
-import authRoutes from "../src/routes/auth.route"
-import preferencesRoutes from "../src/routes/preferences.route"
-import aiTripRoutes from "../src/routes/ai-trip.route"
-import itineraryRoutes from "../src/routes/itinerary.route"
+import authRoutes from "./routes/auth.route"
+import preferencesRoutes from "./routes/preferences.route"
+import aiTripRoutes from "./routes/ai-trip.route"
+import itineraryRoutes from "./routes/itinerary.route"
+import tripRoutes from "./routes/trip.route"
+import placesRoutes from "./routes/places.route"
 import { requestLogger } from "../middleware/requestLogger";
 
 
@@ -54,6 +56,8 @@ app.use("/api/auth", authRoutes)
 app.use("/api/preferences", preferencesRoutes)
 app.use("/api/ai-trips", aiTripRoutes)
 app.use("/api/itinerary", itineraryRoutes)
+app.use("/api/trips", tripRoutes)
+app.use("/api/places", placesRoutes)
 
 
 
@@ -67,6 +71,7 @@ app.use((req: Request, res: Response) => {
 
 //* Global error handler
 app.use((err: any, req: Request, res: Response, next: any) => {
+  // Use a proper logging library instead of console.error for production
   console.error("Error:", err);
   res.status(err.status || 500).json({
     success: false,

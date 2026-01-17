@@ -27,8 +27,27 @@ model User {
   favorites   UserFavorite[]
   reviews     Review[]
   preferences UserPreferences?
+  trips       Trip[]
 
   @@map("users")
+}
+
+// User Trips
+model Trip {
+  id          String   @id @default(cuid())
+  userId      String
+  destination String
+  startDate   String
+  endDate     String
+  budget      String
+  itinerary   String?  // JSON string of detailed itinerary
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+
+  // Relations
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@map("trips")
 }
 
 // User Preferences from Onboarding

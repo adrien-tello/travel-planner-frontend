@@ -155,17 +155,21 @@ export class ItineraryPlannerService {
     }`;
 
     try {
-      const response = await fetch(`https://generativelanguage.googleapis.com/v1beta/models/gemini-pro:generateContent?key=${this.geminiApiKey}`, {
+      const controller = new AbortController();
+      const timeout = setTimeout(() => controller.abort(), 15000);
+
+      const response = await fetch(`https://generativelanguage.googleapis.com/v1beta/models/gemini-1.5-flash-latest:generateContent?key=${this.geminiApiKey}`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
           contents: [{ parts: [{ text: prompt }] }]
-        })
+        }),
+        signal: controller.signal
       });
 
+      clearTimeout(timeout);
       const data = await response.json();
       
-      // Add proper error checking
       if (!data.candidates || !data.candidates[0] || !data.candidates[0].content || !data.candidates[0].content.parts || !data.candidates[0].content.parts[0]) {
         console.error('Invalid Gemini API response structure:', data);
         return this.getDefaultDestinationInfo(destination);
@@ -287,46 +291,54 @@ export class ItineraryPlannerService {
   }
 
   private async getPlacePhotos(placeId: string): Promise<string[]> {
-    if (!placeId || !this.googlePhotoApiKey) return [];
-    
     try {
-      // Get place details with photos
+      if (!this.googlePhotoApiKey) {
+        console.warn('Google Photo API key not configured');
+        return [];
+      }
+
       const response = await fetch(
         `${this.googlePlacesApiBase}/details/json?place_id=${placeId}&fields=photos&key=${this.googlePhotoApiKey}`
       );
+
       const data = await response.json();
-      
+
       if (data.result && data.result.photos) {
-        return data.result.photos.map((photo: any) => 
-          `${this.googlePlacesApiBase}/photo?maxwidth=400&photoreference=${photo.photo_reference}&key=${this.googlePhotoApiKey}`
-        );
+        return data.result.photos.slice(0, 5).map((photo: any) => {
+          const photoReference = photo.photo_reference;
+          return `${this.googlePlacesApiBase}/photo?maxwidth=400&photoreference=${photoReference}&key=${this.googlePhotoApiKey}`;
+        });
       }
-      
+
       return [];
     } catch (error) {
-      console.error('Google Places photo error:', error);
+      console.error('Error fetching place photos:', error);
       return [];
     }
   }
 
   private async searchPlaceAndGetPhotos(query: string, type: string = ''): Promise<string[]> {
-    if (!this.googlePhotoApiKey) return [];
-    
     try {
-      // Search for place
-      const searchResponse = await fetch(
-        `${this.googlePlacesApiBase}/textsearch/json?query=${encodeURIComponent(query + ' ' + type)}&key=${this.googlePhotoApiKey}`
-      );
-      const searchData = await searchResponse.json();
-      
-      if (searchData.results && searchData.results.length > 0) {
-        const place = searchData.results[0];
-        return await this.getPlacePhotos(place.place_id);
+      if (!this.googlePhotoApiKey) {
+        console.warn('Google Photo API key not configured');
+        return [];
       }
-      
+
+      // First, search for the place to get place_id
+      const searchResponse = await fetch(
+        `${this.googlePlacesApiBase}/findplacefromtext/json?input=${encodeURIComponent(query)}&inputtype=textquery&fields=place_id&key=${this.googlePhotoApiKey}`
+      );
+
+      const searchData = await searchResponse.json();
+
+      if (searchData.candidates && searchData.candidates.length > 0) {
+        const placeId = searchData.candidates[0].place_id;
+        return await this.getPlacePhotos(placeId);
+      }
+
       return [];
     } catch (error) {
-      console.error('Google Places search error:', error);
+      console.error('Error searching place photos:', error);
       return [];
     }
   }
