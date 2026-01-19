@@ -1,8 +1,14 @@
-// Request DTOs
-export interface RegisterDTO {
-  name: string;
-  email: string;
-  password: string;
+export interface ApiError {
+  message: string;
+  code?: string;
+  details?: any;
+}
+
+export interface ApiResponse<T = any> {
+  success: boolean;
+  data?: T;
+  message?: string;
+  error?: ApiError;
 }
 
 export interface LoginDTO {
@@ -10,25 +16,20 @@ export interface LoginDTO {
   password: string;
 }
 
-// Backend Response Wrapper
-export interface ApiResponse<T> {
-  success: boolean;
-  message: string;
-  data?: T;
+export interface RegisterDTO {
+  name: string;
+  email: string;
+  password: string;
 }
 
-// Auth Data from Backend
+export interface User {
+  id: string;
+  name: string;
+  email: string;
+  createdAt: string;
+}
+
 export interface AuthData {
-  user: {
-    id: string;
-    name: string;
-    email: string;
-  };
+  user: User;
   token: string;
-}
-
-export interface ApiError {
-  success: false;
-  message: string;
-  errors?: Record<string, string[]>;
 }

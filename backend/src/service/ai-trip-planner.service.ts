@@ -138,20 +138,16 @@ export class AITripPlannerService {
   private async generateDestinationsWithOpenAI(preferences: UserPreferences): Promise<any[]> {
     const prompt = this.buildDestinationPrompt(preferences);
 
-    // Use OpenAI directly for destination generation
-    const OpenAI = require('openai');
-    const openai = new OpenAI({
-      apiKey: process.env.OPEN_AI_API_KEY,
-    });
+    // Use Gemini instead of OpenAI
+    const { GoogleGenerativeAI } = require('@google/generative-ai');
+    const genAI = new GoogleGenerativeAI(process.env.GEMINI_API_KEY);
+    const model = genAI.getGenerativeModel({ model: 'gemini-1.5-flash' });
 
-    const completion = await openai.chat.completions.create({
-      model: 'gpt-4o-mini',
-      messages: [{ role: 'user', content: prompt }],
-      temperature: 0.7,
-    });
+    const result = await model.generateContent(prompt);
+    const response = await result.response;
+    const text = response.text();
 
-    const response = completion.choices[0].message.content || '[]';
-    return JSON.parse(response);
+    return this.parseAIResponse(text);
   }
 
   private async enhanceDestinationWithOpenAI(destination: any, preferences: UserPreferences): Promise<TripSuggestion> {

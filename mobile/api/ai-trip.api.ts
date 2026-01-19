@@ -11,6 +11,10 @@ export interface TripSuggestion {
   bestTimeToVisit: string;
   activities: string[];
   matchScore: number;
+  coordinates?: {
+    latitude: number;
+    longitude: number;
+  };
   hotels?: any[];
   photos?: string[];
   localAttractions?: any[];

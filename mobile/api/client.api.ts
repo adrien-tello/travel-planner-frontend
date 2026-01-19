@@ -1,10 +1,8 @@
-import React from "react";
 import axios, { AxiosError } from "axios";
 import { getToken } from "../utils/storage";
 import { showToast } from "../utils/toast";
 import { ApiError } from "./types";
 import Constants from "expo-constants";
-
 
 const BASE_URL =
   Constants.expoConfig?.extra?.BACKEND_ENDPOINT ||
@@ -18,7 +16,6 @@ export const apiClient = axios.create({
   timeout: 15000,
 });
 
-// Guard to avoid multiple simultaneous redirects to login
 let isRedirectingToLogin = false;
 
 console.log("\n");
@@ -26,15 +23,12 @@ console.log("######################################");
 console.log("🌐 API Base URL:", BASE_URL);
 console.log("######################################");
 
-// Request Interceptor - Add token to requests
 apiClient.interceptors.request.use(
   async (config) => {
     const token = await getToken();
     if (token) {
       config.headers.Authorization = `Bearer ${token}`;
     }
-    
-
     return config;
   },
   (error) => {
@@ -43,12 +37,6 @@ apiClient.interceptors.request.use(
   }
 );
 
-// Default export to satisfy Expo Router route checks (no-op component)
-export default function _ApiClientRoute(): React.ReactElement | null {
-  return null;
-}
-
-// Response Interceptor - Handle errors globally
 apiClient.interceptors.response.use(
   (response) => {
     return response;
@@ -65,7 +53,6 @@ apiClient.interceptors.response.use(
     if (error.response) {
       const { status, data } = error.response;
 
-      // Handle 401 - Token expired or invalid (guarded)
       if (status === 401) {
         showToast({
           type: "error",
@@ -89,7 +76,6 @@ apiClient.interceptors.response.use(
         }
       }
 
-      // Handle 403 - Forbidden
       if (status === 403) {
         showToast({
           type: "error",
@@ -98,7 +84,6 @@ apiClient.interceptors.response.use(
         });
       }
 
-      // Handle 404 - Not found
       if (status === 404) {
         showToast({
           type: "error",
@@ -107,7 +92,6 @@ apiClient.interceptors.response.use(
         });
       }
 
-      // Handle 500 - Server error
       if (status >= 500) {
         showToast({
           type: "error",
@@ -116,7 +100,6 @@ apiClient.interceptors.response.use(
         });
       }
     } else if (error.request) {
-      // Network error - no response received
       console.error("⚠️ Network Error - No response received from backend");
       showToast({
         type: "error",

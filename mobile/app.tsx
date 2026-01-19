@@ -8,6 +8,7 @@ import { MapPin, Compass, User } from "react-native-feather"
 import { AuthProvider, useAuth } from "./context/AuthContext"
 import { ThemeProvider, useTheme } from "./context/ThemeContext"
 import { View, StyleSheet } from "react-native"
+import "./services/mapbox.config" // Initialize Mapbox
 
 // Screens
 import LandingScreen from "./screens/auth/landing"
@@ -24,6 +25,7 @@ import ProfileScreen from "./screens/profile/profile"
 import AITripSuggestionsScreen from "./screens/ai/AITripSuggestionsScreen"
 import TripDetailScreen from "./screens/ai/TripDetailScreen"
 import DetailedItineraryScreen from "./screens/ai/DetailedItineraryScreen"
+import MapPlannerScreen from "./screens/MapPlannerScreen"
 import { useSafeAreaInsets } from "react-native-safe-area-context"
 
 const Stack = createNativeStackNavigator()
@@ -77,6 +79,7 @@ function HomeStack() {
         headerBackTitle: "Back",
       }}
     >
+      <Stack.Screen name="Home" component={HomeScreen} options={{ headerShown: false }} />
       <Stack.Screen name="HomeTab" component={HomeScreen} options={{ headerShown: false }} />
       <Stack.Screen name="AITripSuggestions" component={AITripSuggestionsScreen} options={{ headerShown: false }} />
       <Stack.Screen name="TripDetail" component={TripDetailScreen} options={{ headerShown: false }} />
@@ -85,6 +88,7 @@ function HomeStack() {
       <Stack.Screen name="CreateItinerary" component={CreateItineraryScreen} options={{ title: "Create Trip" }} />
       <Stack.Screen name="ItineraryDetail" component={ItineraryDetailScreen} options={{ title: "Trip Details" }} />
       <Stack.Screen name="TripPlanDetail" component={TripPlanDetailScreen} options={{ title: "Trip Plan" }} />
+      <Stack.Screen name="MapPlanner" component={MapPlannerScreen} options={{ title: "Map Planner", headerShown: false }} />
     </Stack.Navigator>
   )
 }

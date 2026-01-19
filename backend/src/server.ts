@@ -8,6 +8,7 @@ import aiTripRoutes from "./routes/ai-trip.route"
 import itineraryRoutes from "./routes/itinerary.route"
 import tripRoutes from "./routes/trip.route"
 import placesRoutes from "./routes/places.route"
+import mapRoutes from "./routes/map.route"
 import { requestLogger } from "../middleware/requestLogger";
 
 
@@ -58,6 +59,7 @@ app.use("/api/ai-trips", aiTripRoutes)
 app.use("/api/itinerary", itineraryRoutes)
 app.use("/api/trips", tripRoutes)
 app.use("/api/places", placesRoutes)
+app.use("/api/map", mapRoutes)
 
 
 

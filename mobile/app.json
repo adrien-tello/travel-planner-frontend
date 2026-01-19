@@ -3,8 +3,10 @@
     "name": "Wanderlust",
     "slug": "wanderlust",
     "version": "1.0.0",
-    "icon":"./assets/image/logo.png",
-    "assetBundlePatterns": ["**/*"],
+    "icon": "./assets/image/logo.png",
+    "assetBundlePatterns": [
+      "**/*"
+    ],
     "plugins": [
       "expo-router",
       [
@@ -16,7 +18,7 @@
       [
         "expo-notifications",
         {
-          "icon": "./assets/images/wayfinder-splash-logo.png",
+          "icon": "./assets/image/icon.png",
           "color": "#3B82F6",
           "sounds": []
         }
@@ -32,7 +34,11 @@
       "expo-font"
     ],
     "scheme": "wanderlust",
-    "platforms": ["ios", "android", "web"],
+    "platforms": [
+      "ios",
+      "android",
+      "web"
+    ],
     "ios": {
       "bundleIdentifier": "com.wanderlust.app",
       "config": {
@@ -45,10 +51,18 @@
         "googleMaps": {
           "apiKey": "GOOGLE_MAPS_API_KEY"
         }
-      }
+      },
+      "permissions": [
+        "android.permission.ACCESS_COARSE_LOCATION",
+        "android.permission.ACCESS_FINE_LOCATION"
+      ]
     },
     "extra": {
-      "BACKEND_ENDPOINT": "https://81034f13d712.ngrok-free.app/api"
+      "BACKEND_ENDPOINT": "https://81034f13d712.ngrok-free.app/api",
+      "router": {},
+      "eas": {
+        "projectId": "c90376c3-f93c-411a-b149-f2643deb6d11"
+      }
     }
   }
 }

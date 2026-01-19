@@ -6,7 +6,7 @@ export type ThemeMode = 'light' | 'dark';
 interface ThemeContextType {
   theme: ThemeMode;
   toggleTheme: () => void;
-  colors: typeof lightColors;
+  colors: typeof lightColors | typeof darkColors;
 }
 
 const lightColors = {

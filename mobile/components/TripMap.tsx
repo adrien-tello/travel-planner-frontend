@@ -1,83 +1,147 @@
-import React from "react"
-import { StyleSheet, View, Dimensions } from "react-native"
-import MapView, { Marker, PROVIDER_GOOGLE } from "react-native-maps"
-import { Hotel, Restaurant, Leisure } from "../store/tripPlannerStore"
-import { colors, borderRadius } from "../theme/colors"
+import React, { useRef, useEffect } from 'react';
+import { View, StyleSheet, Dimensions } from 'react-native';
+import Mapbox from '../services/mapbox.config';
+import { colors, borderRadius } from '../theme/colors';
+
+interface Location {
+  id: string;
+  name: string;
+  latitude: number;
+  longitude: number;
+  type: 'hotel' | 'restaurant' | 'attraction' | 'transport';
+}
 
 interface TripMapProps {
-  hotels?: Hotel[]
-  restaurants?: Restaurant[]
-  leisureActivities?: Leisure[]
-  initialRegion?: {
-    latitude: number
-    longitude: number
-    latitudeDelta: number
-    longitudeDelta: number
-  }
+  locations: Location[];
+  centerCoordinate?: [number, number];
+  showUserLocation?: boolean;
+  style?: any;
 }
+
+const { width, height } = Dimensions.get('window');
 
 export const TripMap: React.FC<TripMapProps> = ({
-  hotels = [],
-  restaurants = [],
-  leisureActivities = [],
-  initialRegion = {
-    latitude: 40.7128,
-    longitude: -74.0060,
-    latitudeDelta: 0.0922,
-    longitudeDelta: 0.0421,
-  },
+  locations = [],
+  centerCoordinate,
+  showUserLocation = true,
+  style,
 }) => {
+  const cameraRef = useRef<Mapbox.Camera>(null);
+
+  useEffect(() => {
+    if (locations?.length > 0 && cameraRef.current) {
+      // Fit camera to show all locations
+      const coordinates = locations.map(loc => [loc.longitude, loc.latitude]);
+      cameraRef.current.fitBounds(
+        coordinates[0], // northEast
+        coordinates[coordinates.length - 1], // southWest
+        [50, 50, 50, 50], // padding
+        1000 // animationDuration
+      );
+    }
+  }, [locations]);
+
+  const getMarkerColor = (type: string) => {
+    switch (type) {
+      case 'hotel': return colors.primary;
+      case 'restaurant': return colors.secondary;
+      case 'attraction': return colors.accent1;
+      case 'transport': return colors.accent2;
+      default: return colors.primary;
+    }
+  };
+
   return (
-    <View style={styles.container}>
-      <MapView
-        provider={PROVIDER_GOOGLE}
+    <View style={[styles.container, style]}>
+      <Mapbox.MapView
         style={styles.map}
-        initialRegion={initialRegion}
+        styleURL="mapbox://styles/mapbox/streets-v12"
       >
-        {/* Hotel Markers */}
-        {hotels.map((hotel) => (
-          <Marker
-            key={`hotel-${hotel.id}`}
-            coordinate={hotel.location}
-            title={hotel.name}
-            description={`$${hotel.pricePerNight}/night • ${hotel.rating}⭐`}
-            pinColor={colors.primary}
-          />
+        <Mapbox.Camera
+          ref={cameraRef}
+          centerCoordinate={centerCoordinate || [0, 0]}
+          zoomLevel={12}
+          animationDuration={1000}
+        />
+
+        {showUserLocation && (
+          <Mapbox.UserLocation visible={true} />
+        )}
+
+        {locations?.map((location, index) => (
+          <Mapbox.PointAnnotation
+            key={location.id}
+            id={location.id}
+            coordinate={[location.longitude, location.latitude]}
+          >
+            <View style={[styles.marker, { backgroundColor: getMarkerColor(location.type) }]}>
+              <View style={styles.markerInner}>
+                <View style={styles.markerText}>
+                  {/* You can add icons here based on type */}
+                </View>
+              </View>
+            </View>
+          </Mapbox.PointAnnotation>
         ))}
 
-        {/* Restaurant Markers */}
-        {restaurants.map((restaurant) => (
-          <Marker
-            key={`restaurant-${restaurant.id}`}
-            coordinate={restaurant.location}
-            title={restaurant.name}
-            description={`${restaurant.cuisine} • ${restaurant.priceRange}`}
-            pinColor={colors.secondary}
-          />
-        ))}
-
-        {/* Leisure Activity Markers */}
-        {leisureActivities.map((activity) => (
-          <Marker
-            key={`leisure-${activity.id}`}
-            coordinate={activity.location}
-            title={activity.name}
-            description={`${activity.category} • $${activity.price}`}
-            pinColor={colors.accent3}
-          />
-        ))}
-      </MapView>
+        {/* Draw route line between locations */}
+        {locations?.length > 1 && (
+          <Mapbox.ShapeSource
+            id="routeSource"
+            shape={{
+              type: 'Feature',
+              properties: {},
+              geometry: {
+                type: 'LineString',
+                coordinates: locations?.map(loc => [loc.longitude, loc.latitude]) || [],
+              },
+            }}
+          >
+            <Mapbox.LineLayer
+              id="routeLine"
+              style={{
+                lineColor: colors.primary,
+                lineWidth: 3,
+                lineOpacity: 0.7,
+              }}
+            />
+          </Mapbox.ShapeSource>
+        )}
+      </Mapbox.MapView>
     </View>
-  )
-}
+  );
+};
 
 const styles = StyleSheet.create({
   container: {
+    flex: 1,
     borderRadius: borderRadius.lg,
-    overflow: "hidden",
+    overflow: 'hidden',
   },
   map: {
-    width: "100%",
-    height: 300,
+    flex: 1,
   },
-})
+  marker: {
+    width: 30,
+    height: 30,
+    borderRadius: 15,
+    justifyContent: 'center',
+    alignItems: 'center',
+    borderWidth: 2,
+    borderColor: colors.white,
+  },
+  markerInner: {
+    width: 20,
+    height: 20,
+    borderRadius: 10,
+    backgroundColor: colors.white,
+    justifyContent: 'center',
+    alignItems: 'center',
+  },
+  markerText: {
+    width: 8,
+    height: 8,
+    borderRadius: 4,
+    backgroundColor: colors.primary,
+  },
+});
