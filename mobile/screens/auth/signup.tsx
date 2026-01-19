@@ -1,6 +1,6 @@
 import { useState } from "react"
 import { View, Text, TouchableOpacity, StyleSheet, ScrollView, TextInput, TextStyle } from "react-native"
-import { Zap } from "react-native-feather"
+import { Zap } from "lucide-react-native"
 import { SafeAreaView } from "react-native-safe-area-context"
 import { LinearGradient } from "expo-linear-gradient"
 import { useAuth } from "../../context/AuthContext"
@@ -43,6 +43,7 @@ export default function SignupScreen({ navigation }: any) {
     try {
       await signUp({ name: name.trim(), email: email.trim(), password })
       showToast({ type: "success", text1: "Account Created!", text2: "Welcome to Wanderlust AI" })
+      navigation.navigate("Onboarding")
     } catch (error: any) {
       showToast({ 
         type: "error", 

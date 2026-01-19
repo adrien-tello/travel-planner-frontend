@@ -4,8 +4,35 @@ import { MapPin, Calendar, DollarSign, Clock } from "react-native-feather"
 import { LinearGradient } from "expo-linear-gradient"
 import { colors, spacing, typography, borderRadius, shadows } from "../../theme/colors"
 import { Card } from "../../components/Card"
+import { LocationStatus } from "../../components/LocationStatus"
+import { ProximityTracker } from "../../components/ProximityTracker"
 
 export default function ItineraryDetailScreen({ route }: any) {
+  // Sample destinations for proximity tracking
+  const sampleDestinations = [
+    {
+      id: '1',
+      name: 'Eiffel Tower',
+      latitude: 48.8584,
+      longitude: 2.2945,
+      type: 'attraction' as const,
+    },
+    {
+      id: '2', 
+      name: 'Hotel Le Meurice',
+      latitude: 48.8656,
+      longitude: 2.3282,
+      type: 'hotel' as const,
+    },
+    {
+      id: '3',
+      name: 'Le Comptoir du Relais',
+      latitude: 48.8534,
+      longitude: 2.3388,
+      type: 'restaurant' as const,
+    },
+  ];
+
   return (
     <SafeAreaView style={styles.container}>
       {/* Header */}
@@ -61,6 +88,20 @@ export default function ItineraryDetailScreen({ route }: any) {
             <Text style={styles.aiBadgeText}>✨ AI Generated Itinerary</Text>
           </LinearGradient>
         </View>
+
+        {/* Location Tracking Status */}
+        <Card style={styles.locationCard}>
+          <Text style={styles.sectionTitle}>Live Location Tracking</Text>
+          <LocationStatus showWeather={true} />
+        </Card>
+
+        {/* Proximity Tracking */}
+        <Card style={styles.proximityCard}>
+          <ProximityTracker 
+            destinations={sampleDestinations}
+            radiusMeters={100}
+          />
+        </Card>
 
         {/* Coming Soon Message */}
         <Card style={styles.comingSoonCard}>
@@ -165,5 +206,16 @@ const styles = StyleSheet.create({
     color: colors.textSecondary,
     textAlign: "center",
     lineHeight: 24,
+  },
+  locationCard: {
+    marginBottom: spacing.lg,
+  },
+  proximityCard: {
+    marginBottom: spacing.lg,
+  },
+  sectionTitle: {
+    ...(typography.h4 as TextStyle),
+    color: colors.textPrimary,
+    marginBottom: spacing.md,
   },
 })

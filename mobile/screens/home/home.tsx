@@ -15,6 +15,8 @@ import { useTripPlannerStore } from "../../store/tripPlannerStore"
 import { colors, spacing, typography, borderRadius, shadows } from "../../theme/colors"
 import { AIPreferencesModal } from "../../components/AIPreferencesModal"
 import { PersonalizationIndicator } from "../../components/PersonalizationIndicator"
+import { LocationStatus } from "../../components/LocationStatus"
+import { Card } from "../../components/Card"
 import { LinearGradient } from "expo-linear-gradient"
 import { SafeAreaView } from "react-native-safe-area-context"
 import { preferencesApi } from "../../api/preferences.api"
@@ -24,6 +26,8 @@ import { useTheme } from "../../context/ThemeContext"
 export default function HomeScreen({ navigation }: any) {
   const trips = useTripStore((state) => state.trips)
   const deleteTrip = useTripStore((state) => state.deleteTrip)
+  const loadTrips = useTripStore((state) => state.loadTrips)
+  const loading = useTripStore((state) => state.loading)
   const [searchQuery, setSearchQuery] = useState("")
   const [showAIModal, setShowAIModal] = useState(false)
   const [showAIFeatures, setShowAIFeatures] = useState(false)
@@ -38,6 +42,7 @@ export default function HomeScreen({ navigation }: any) {
 
   useEffect(() => {
     loadUserPreferences()
+    loadTrips()
   }, [])
 
   const loadUserPreferences = async () => {
@@ -86,6 +91,12 @@ export default function HomeScreen({ navigation }: any) {
       </View>
 
       <ScrollView style={styles.content} showsVerticalScrollIndicator={false}>
+        {/* Location Status Card */}
+        <Card style={styles.locationStatusCard}>
+          <Text style={styles.locationStatusTitle}>Travel Status</Text>
+          <LocationStatus showWeather={true} />
+        </Card>
+
         {/* AI Feature Card with Plus Button */}
         <View style={styles.aiSection}>
           <TouchableOpacity 
@@ -196,7 +207,14 @@ export default function HomeScreen({ navigation }: any) {
               renderItem={({ item }) => (
                 <View style={styles.tripCard}>
                   <TouchableOpacity
-                    onPress={() => navigation.navigate("ItineraryDetail", { id: item.id })}
+                    onPress={() => {
+                      const trip = useTripStore.getState().getTrip(item.id);
+                      if (trip?.itinerary) {
+                        navigation.navigate("DetailedItinerary", { itinerary: trip.itinerary });
+                      } else {
+                        navigation.navigate("ItineraryDetail", { id: item.id });
+                      }
+                    }}
                     activeOpacity={0.7}
                   >
                     <View style={styles.tripHeader}>
@@ -250,6 +268,14 @@ export default function HomeScreen({ navigation }: any) {
           activeOpacity={0.8}
         >
           <Plus width={24} height={24} color={colors.primary} strokeWidth={2.5} />
+        </TouchableOpacity>
+        
+        <TouchableOpacity
+          style={[styles.quickCreateButton, { backgroundColor: colors.surface, shadowColor: colors.black }]}
+          onPress={() => navigation.navigate("MapPlanner")}
+          activeOpacity={0.8}
+        >
+          <MapPin width={24} height={24} color={colors.secondary} strokeWidth={2.5} />
         </TouchableOpacity>
         
         <TouchableOpacity
@@ -319,6 +345,14 @@ const styles = StyleSheet.create({
     flex: 1,
     paddingHorizontal: spacing.lg,
     paddingTop: spacing.lg,
+  },
+  locationStatusCard: {
+    marginBottom: spacing.lg,
+  },
+  locationStatusTitle: {
+    ...(typography.h4 as TextStyle),
+    color: colors.textPrimary,
+    marginBottom: spacing.md,
   },
   aiSection: {
     flexDirection: "row",

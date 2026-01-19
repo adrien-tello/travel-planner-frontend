@@ -15,6 +15,7 @@ import { LinearGradient } from "expo-linear-gradient"
 import { useTripStore } from "../../store/tripStore"
 import { colors, spacing, typography, borderRadius, shadows } from "../../theme/colors"
 import { GradientButton } from "../../components/GradientButton"
+import { TripMap } from "../../components/TripMap"
 import { itineraryApi } from "../../api/itinerary.api"
 import { preferencesApi } from "../../api/preferences.api"
 import { showToast } from "../../utils/toast"
@@ -30,6 +31,8 @@ export default function CreateItineraryScreen({ navigation, route }: any) {
   const [travelers, setTravelers] = useState("2")
   const [isGenerating, setIsGenerating] = useState(false)
   const [userPreferences, setUserPreferences] = useState<any>(null)
+  const [showMap, setShowMap] = useState(false)
+  const [destinationCoords, setDestinationCoords] = useState<{latitude: number, longitude: number} | null>(null)
 
   useEffect(() => {
     loadUserPreferences()
@@ -72,11 +75,12 @@ export default function CreateItineraryScreen({ navigation, route }: any) {
       )
 
       // Add trip to local store
-      addTrip({
+      await addTrip({
         destination,
         startDate: startDate || new Date().toISOString().split('T')[0],
         endDate: endDate || new Date(Date.now() + parseInt(duration) * 24 * 60 * 60 * 1000).toISOString().split('T')[0],
         budget: budget || detailedItinerary.totalBudget.toString(),
+        itinerary: detailedItinerary,
       })
 
       showToast({
@@ -207,6 +211,28 @@ export default function CreateItineraryScreen({ navigation, route }: any) {
             </View>
           </View>
 
+          {/* Map Preview */}
+          {destination && showMap && destinationCoords && (
+            <View style={styles.mapSection}>
+              <Text style={styles.label}>Destination Preview</Text>
+              <View style={styles.mapContainer}>
+                <TripMap
+                  locations={[
+                    {
+                      id: '1',
+                      name: destination,
+                      latitude: destinationCoords.latitude,
+                      longitude: destinationCoords.longitude,
+                      type: 'attraction',
+                    },
+                  ]}
+                  centerCoordinate={[destinationCoords.longitude, destinationCoords.latitude]}
+                  style={styles.map}
+                />
+              </View>
+            </View>
+          )}
+
           {/* AI Feature Card */}
           <TouchableOpacity style={styles.aiCard} activeOpacity={0.9}>
             <LinearGradient
@@ -251,6 +277,7 @@ export default function CreateItineraryScreen({ navigation, route }: any) {
             style={styles.button}
           />
         </View>
+        <View style={{ height: 100 }} />
       </ScrollView>
     </SafeAreaView>
   )
@@ -417,6 +444,18 @@ const styles = StyleSheet.create({
   noPreferencesText: {
     ...(typography.body as TextStyle),
     color: colors.textPrimary,
+    flex: 1,
+  },
+  mapSection: {
+    gap: spacing.sm,
+  },
+  mapContainer: {
+    height: 200,
+    borderRadius: borderRadius.lg,
+    overflow: 'hidden',
+    ...shadows.md,
+  },
+  map: {
     flex: 1,
   },
 })

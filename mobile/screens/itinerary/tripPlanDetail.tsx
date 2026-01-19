@@ -56,9 +56,29 @@ export default function TripPlanDetailScreen({ route }: any) {
       <View style={styles.section}>
         <Text style={styles.sectionTitle}>Location Overview 📍</Text>
         <TripMap
-          hotels={currentPlan.hotels}
-          restaurants={currentPlan.restaurants}
-          leisureActivities={currentPlan.leisureActivities}
+          locations={[
+            ...currentPlan.hotels.map((hotel, index) => ({
+              id: hotel.id,
+              name: hotel.name,
+              latitude: 40.7128 + (index * 0.01), // Mock coordinates
+              longitude: -74.0060 + (index * 0.01),
+              type: 'hotel' as const,
+            })),
+            ...currentPlan.restaurants.map((restaurant, index) => ({
+              id: restaurant.id,
+              name: restaurant.name,
+              latitude: 40.7128 + (index * 0.01) + 0.005,
+              longitude: -74.0060 + (index * 0.01) + 0.005,
+              type: 'restaurant' as const,
+            })),
+            ...currentPlan.leisureActivities.map((activity, index) => ({
+              id: activity.id,
+              name: activity.name,
+              latitude: 40.7128 + (index * 0.01) + 0.01,
+              longitude: -74.0060 + (index * 0.01) + 0.01,
+              type: 'attraction' as const,
+            })),
+          ]}
         />
       </View>
 

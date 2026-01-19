@@ -4,12 +4,16 @@ import {
   StyleSheet,
   FlatList,
   TouchableOpacity,
-  ImageBackground,
+  Image,
   TextStyle,
+  Dimensions,
 } from "react-native"
 import { SafeAreaView } from "react-native-safe-area-context"
-import { MapPin, ArrowRight } from "react-native-feather"
+import { MapPin } from "react-native-feather"
 import { colors, spacing, typography, borderRadius, shadows } from "../../theme/colors"
+
+const { width } = Dimensions.get("window")
+const ITEM_WIDTH = (width - spacing.lg * 3) / 2
 
 export default function SearchScreen({ navigation }: any) {
   const destinations = [
@@ -18,86 +22,83 @@ export default function SearchScreen({ navigation }: any) {
       name: "Paris",
       country: "France",
       image: "https://images.unsplash.com/photo-1499621574732-72324384dfbc?w=400",
-      description: "City of Light & Romance",
     },
     {
       id: "2",
       name: "Tokyo",
       country: "Japan",
       image: "https://images.unsplash.com/photo-1540959733332-eab4deabeeaf?w=400",
-      description: "Modern Metropolis",
     },
     {
       id: "3",
       name: "Barcelona",
       country: "Spain",
       image: "https://images.unsplash.com/photo-1583422409516-2895a77efded?w=400",
-      description: "Art & Architecture",
     },
     {
       id: "4",
       name: "Dubai",
       country: "UAE",
       image: "https://images.unsplash.com/photo-1512453979798-5ea266f8880c?w=400",
-      description: "Luxury & Innovation",
     },
     {
       id: "5",
       name: "New York",
       country: "USA",
       image: "https://images.unsplash.com/photo-1496442226666-8d4d0e62e6e9?w=400",
-      description: "The Big Apple",
     },
     {
       id: "6",
       name: "Bali",
       country: "Indonesia",
       image: "https://images.unsplash.com/photo-1537996194471-e657df975ab4?w=400",
-      description: "Tropical Paradise",
+    },
+    {
+      id: "7",
+      name: "London",
+      country: "UK",
+      image: "https://images.unsplash.com/photo-1513635269975-59663e0ac1ad?w=400",
+    },
+    {
+      id: "8",
+      name: "Rome",
+      country: "Italy",
+      image: "https://images.unsplash.com/photo-1552832230-c0197dd311b5?w=400",
     },
   ]
 
   return (
     <SafeAreaView style={styles.container}>
-      {/* Header */}
       <View style={styles.header}>
         <Text style={styles.title}>Explore Destinations ✈️</Text>
-        <Text style={styles.subtitle}>Discover amazing places around the world</Text>
+        <Text style={styles.subtitle}>Discover amazing places</Text>
       </View>
 
       <FlatList
         data={destinations}
         renderItem={({ item }) => (
           <TouchableOpacity
-            style={styles.card}
+            style={styles.gridItem}
             onPress={() => navigation.navigate("DestinationDetail", { destination: item })}
-            activeOpacity={0.9}
+            activeOpacity={0.8}
           >
-            <ImageBackground
-              source={{ uri: item.image }}
-              style={styles.cardImage}
-              imageStyle={styles.cardImageStyle}
-            >
-              <View style={styles.cardOverlay}>
-                <View style={styles.cardContent}>
-                  <View style={styles.locationContainer}>
-                    <MapPin width={16} height={16} color={colors.white} strokeWidth={2} />
-                    <Text style={styles.cardCountry}>{item.country}</Text>
-                  </View>
-                  <Text style={styles.cardTitle}>{item.name}</Text>
-                  <Text style={styles.cardDescription}>{item.description}</Text>
-                </View>
-                <View style={styles.cardButton}>
-                  <ArrowRight width={20} height={20} color={colors.white} strokeWidth={2} />
-                </View>
+            <Image source={{ uri: item.image }} style={styles.image} />
+            <View style={styles.overlay}>
+              <View style={styles.locationBadge}>
+                <MapPin width={12} height={12} color={colors.white} strokeWidth={2} />
+                <Text style={styles.country}>{item.country}</Text>
               </View>
-            </ImageBackground>
+              <Text style={styles.name}>{item.name}</Text>
+            </View>
           </TouchableOpacity>
         )}
         keyExtractor={(item) => item.id}
-        contentContainerStyle={styles.list}
+        numColumns={2}
+        contentContainerStyle={styles.grid}
+        columnWrapperStyle={styles.row}
         showsVerticalScrollIndicator={false}
       />
+      <View style={{ height: 100 }} />
     </SafeAreaView>
   )
 }
@@ -120,71 +121,60 @@ const styles = StyleSheet.create({
   title: {
     ...(typography.h2 as TextStyle),
     color: colors.white,
-    marginBottom: spacing.sm,
+    marginBottom: spacing.xs,
   },
   subtitle: {
     ...(typography.body as TextStyle),
     color: "rgba(255, 255, 255, 0.9)",
   },
-  list: {
+  grid: {
     padding: spacing.lg,
-    gap: spacing.lg,
     paddingBottom: spacing.xxl,
   },
-  card: {
-    borderRadius: borderRadius.xl,
-    overflow: "hidden",
-    height: 240,
-    ...shadows.xl,
+  row: {
+    justifyContent: "space-between",
+    marginBottom: spacing.lg,
   },
-  cardImage: {
+  gridItem: {
+    width: ITEM_WIDTH,
+    height: ITEM_WIDTH * 1.3,
+    borderRadius: borderRadius.lg,
+    overflow: "hidden",
+    ...shadows.md,
+  },
+  image: {
     width: "100%",
     height: "100%",
   },
-  cardImageStyle: {
-    borderRadius: borderRadius.xl,
-  },
-  cardOverlay: {
-    flex: 1,
-    padding: spacing.lg,
-    justifyContent: "space-between",
-    backgroundColor: "rgba(0, 0, 0, 0.4)",
-  },
-  cardContent: {
+  overlay: {
+    position: "absolute",
+    bottom: 0,
+    left: 0,
+    right: 0,
+    padding: spacing.md,
+    backgroundColor: "rgba(0, 0, 0, 0.5)",
     gap: spacing.xs,
   },
-  locationContainer: {
+  locationBadge: {
     flexDirection: "row",
     alignItems: "center",
     gap: spacing.xs,
-    backgroundColor: "rgba(0, 0, 0, 0.3)",
-    paddingHorizontal: spacing.md,
-    paddingVertical: spacing.xs,
+    backgroundColor: "rgba(255, 255, 255, 0.2)",
+    paddingHorizontal: spacing.sm,
+    paddingVertical: 4,
     borderRadius: borderRadius.sm,
     alignSelf: "flex-start",
   },
-  cardCountry: {
+  country: {
     ...(typography.caption as TextStyle),
     color: colors.white,
+    fontSize: 10,
     fontWeight: "600",
   },
-  cardTitle: {
-    ...(typography.h2 as TextStyle),
+  name: {
+    ...(typography.h4 as TextStyle),
     color: colors.white,
-    marginTop: spacing.sm,
-  },
-  cardDescription: {
-    ...(typography.body as TextStyle),
-    color: "rgba(255, 255, 255, 0.9)",
-  },
-  cardButton: {
-    width: 48,
-    height: 48,
-    borderRadius: borderRadius.md,
-    backgroundColor: "rgba(255, 255, 255, 0.25)",
-    justifyContent: "center",
-    alignItems: "center",
-    alignSelf: "flex-end",
-    ...shadows.md,
+    fontSize: 16,
+    fontWeight: "700",
   },
 })

@@ -38,6 +38,11 @@ export const colors = {
   error: "#ef4444",
   warning: "#f59e0b",
   info: "#3b82f6",
+  red: "#ef4444",
+  
+  // Form inputs
+  inputBackground: "#f8fafc",
+  text: "#0f172a",
   
   // Gradients - AI Themed
   gradientPurple: ["#8b5cf6", "#6366f1"] as const, // Purple to Indigo
@@ -145,6 +150,11 @@ export const typography = {
     lineHeight: 20,
   },
   caption: {
+    fontSize: 12,
+    fontWeight: "500" as const,
+    lineHeight: 16,
+  },
+  small: {
     fontSize: 12,
     fontWeight: "500" as const,
     lineHeight: 16,

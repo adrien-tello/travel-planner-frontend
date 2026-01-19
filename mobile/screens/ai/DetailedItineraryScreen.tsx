@@ -15,6 +15,52 @@ import { colors, spacing, typography, borderRadius, shadows } from "../../theme/
 import { DetailedItinerary } from "../../api/itinerary.api";
 import { ItineraryMap } from "../../components/ItineraryMap";
 
+// Helper function to extract places from itinerary for map display
+const extractPlacesFromItinerary = (itinerary: DetailedItinerary) => {
+  const places: Array<{ name: string; city: string; type: string }> = [];
+
+  // Add hotels
+  if (itinerary.hotels) {
+    itinerary.hotels.forEach(hotel => {
+      places.push({
+        name: hotel.name,
+        city: itinerary.destination,
+        type: 'hotel'
+      });
+    });
+  }
+
+  // Add activities from all days
+  if (itinerary.days) {
+    itinerary.days.forEach(day => {
+      if (day.activities) {
+        day.activities.forEach(activity => {
+          places.push({
+            name: activity.name,
+            city: itinerary.destination,
+            type: 'activity'
+          });
+        });
+      }
+
+      // Add meals/restaurants
+      if (day.meals) {
+        day.meals.forEach(meal => {
+          if (meal.restaurant && meal.restaurant !== 'Local Restaurant') {
+            places.push({
+              name: meal.restaurant,
+              city: itinerary.destination,
+              type: 'restaurant'
+            });
+          }
+        });
+      }
+    });
+  }
+
+  return places;
+};
+
 export default function DetailedItineraryScreen({ navigation, route }: any) {
   const { itinerary } = route.params;
 
@@ -94,126 +140,138 @@ export default function DetailedItineraryScreen({ navigation, route }: any) {
         {/* Map Integration */}
         {itinerary.mapData && (
           <View style={styles.section}>
-            <ItineraryMap
-              mapData={itinerary.mapData}
-              hotels={itinerary.hotels}
-              activities={itinerary.days.flatMap((day: any) => day.activities)}
-              destination={itinerary.destination}
-            />
+            <Text style={styles.sectionTitle}>Location Map</Text>
+            <View style={styles.mapContainer}>
+              <ItineraryMap places={extractPlacesFromItinerary(itinerary)} />
+            </View>
           </View>
         )}
 
         {/* Hotels */}
-        <View style={styles.section}>
-          <Text style={styles.sectionTitle}>Recommended Hotels</Text>
-          {itinerary.hotels.map((hotel: any, index: number) => (
-            <View key={index} style={styles.hotelCard}>
-              {hotel.photos && hotel.photos.length > 0 && (
-                <ScrollView horizontal showsHorizontalScrollIndicator={false} style={styles.hotelPhotos}>
-                  {hotel.photos.map((photo: any, photoIndex: number) => (
-                    <Image key={photoIndex} source={{ uri: photo }} style={styles.hotelPhoto} />
-                  ))}
-                </ScrollView>
-              )}
-              <View style={styles.hotelInfo}>
-                <Text style={styles.hotelName}>{hotel.name}</Text>
-                <View style={styles.hotelRating}>
-                  <Star width={14} height={14} color={colors.warning} fill={colors.warning} />
-                  <Text style={styles.ratingText}>{hotel.rating}</Text>
+        {itinerary.hotels && itinerary.hotels.length > 0 && (
+          <View style={styles.section}>
+            <Text style={styles.sectionTitle}>Recommended Hotels</Text>
+            {itinerary.hotels.map((hotel: any, index: number) => (
+              <View key={index} style={styles.hotelCard}>
+                {hotel.photos && hotel.photos.length > 0 && (
+                  <ScrollView horizontal showsHorizontalScrollIndicator={false} style={styles.hotelPhotos}>
+                    {hotel.photos.map((photo: any, photoIndex: number) => (
+                      <Image key={photoIndex} source={{ uri: photo }} style={styles.hotelPhoto} />
+                    ))}
+                  </ScrollView>
+                )}
+                <View style={styles.hotelInfo}>
+                  <Text style={styles.hotelName}>{hotel.name}</Text>
+                  <View style={styles.hotelRating}>
+                    <Star width={14} height={14} color={colors.warning} fill={colors.warning} />
+                    <Text style={styles.ratingText}>{hotel.rating}</Text>
+                  </View>
+                  <Text style={styles.hotelAmenities}>{(hotel.amenities || []).join(' • ')}</Text>
                 </View>
-                <Text style={styles.hotelAmenities}>{hotel.amenities.join(' • ')}</Text>
+                <Text style={styles.hotelPrice}>${hotel.pricePerNight}/night</Text>
               </View>
-              <Text style={styles.hotelPrice}>${hotel.pricePerNight}/night</Text>
-            </View>
-          ))}
-        </View>
+            ))}
+          </View>
+        )}
 
         {/* Daily Itinerary */}
-        <View style={styles.section}>
-          <Text style={styles.sectionTitle}>Day-by-Day Itinerary</Text>
-          {itinerary.days.map((day: any, index: number) => (
-            <View key={index} style={styles.dayCard}>
-              <LinearGradient
-                colors={[colors.primary + '20', colors.primaryLight + '10']}
-                style={styles.dayHeader}
-              >
-                <Text style={styles.dayNumber}>Day {day.day}</Text>
-                <Text style={styles.dayTheme}>{day.theme}</Text>
-                <Text style={styles.dayDate}>{day.date}</Text>
-              </LinearGradient>
+        {itinerary.days && itinerary.days.length > 0 && (
+          <View style={styles.section}>
+            <Text style={styles.sectionTitle}>Day-by-Day Itinerary</Text>
+            {itinerary.days.map((day: any, index: number) => (
+              <View key={index} style={styles.dayCard}>
+                <LinearGradient
+                  colors={[colors.primary + '20', colors.primaryLight + '10']}
+                  style={styles.dayHeader}
+                >
+                  <Text style={styles.dayNumber}>Day {day.day}</Text>
+                  <Text style={styles.dayTheme}>{day.theme}</Text>
+                  <Text style={styles.dayDate}>{day.date}</Text>
+                </LinearGradient>
 
-              {/* Activities */}
-              <View style={styles.dayContent}>
-                <Text style={styles.subsectionTitle}>Activities</Text>
-                {day.activities.map((activity: any, actIndex: number) => (
-                  <View key={actIndex} style={styles.activityItem}>
-                    <View style={styles.activityTime}>
-                      <Text style={styles.timeText}>{activity.time}</Text>
-                    </View>
-                    <View style={styles.activityDetails}>
-                      <Text style={styles.activityName}>{activity.name}</Text>
-                      <Text style={styles.activityDescription}>{activity.description}</Text>
-                      <View style={styles.activityMeta}>
-                        <MapPin width={12} height={12} color={colors.textSecondary} />
-                        <Text style={styles.activityLocation}>{activity.location}</Text>
-                        <Text style={styles.activityCost}>${activity.cost}</Text>
-                      </View>
-                      {activity.photos && activity.photos.length > 0 && (
-                        <ScrollView horizontal style={styles.activityPhotos}>
-                          {activity.photos.map((photo: any, photoIndex: number) => (
-                            <Image key={photoIndex} source={{ uri: photo }} style={styles.activityPhoto} />
-                          ))}
-                        </ScrollView>
-                      )}
-                    </View>
-                  </View>
-                ))}
-
-                {/* Meals */}
-                <Text style={styles.subsectionTitle}>Meals</Text>
-                {day.meals.map((meal: any, mealIndex: number) => (
-                  <View key={mealIndex} style={styles.mealItem}>
-                    <View style={styles.mealTime}>
-                      <Text style={styles.timeText}>🍽️ {meal.time}</Text>
-                    </View>
-                    <View style={styles.mealDetails}>
-                      <Text style={styles.mealRestaurant}>{meal.restaurant}</Text>
-                      <Text style={styles.mealCuisine}>{meal.cuisine} • ${meal.cost}</Text>
-                      {meal.rating && (
-                        <View style={styles.mealRating}>
-                          <Star width={12} height={12} color={colors.warning} fill={colors.warning} />
-                          <Text style={styles.ratingText}>{meal.rating}</Text>
+                {/* Activities */}
+                <View style={styles.dayContent}>
+                  {day.activities && day.activities.length > 0 && (
+                    <>
+                      <Text style={styles.subsectionTitle}>Activities</Text>
+                      {day.activities.map((activity: any, actIndex: number) => (
+                        <View key={actIndex} style={styles.activityItem}>
+                          <View style={styles.activityTime}>
+                            <Text style={styles.timeText}>{activity.time}</Text>
+                          </View>
+                          <View style={styles.activityDetails}>
+                            <Text style={styles.activityName}>{activity.name}</Text>
+                            <Text style={styles.activityDescription}>{activity.description}</Text>
+                            <View style={styles.activityMeta}>
+                              <MapPin width={12} height={12} color={colors.textSecondary} />
+                              <Text style={styles.activityLocation}>{activity.location}</Text>
+                              <Text style={styles.activityCost}>${activity.cost}</Text>
+                            </View>
+                            {activity.photos && activity.photos.length > 0 && (
+                              <ScrollView horizontal style={styles.activityPhotos}>
+                                {activity.photos.map((photo: any, photoIndex: number) => (
+                                  <Image key={photoIndex} source={{ uri: photo }} style={styles.activityPhoto} />
+                                ))}
+                              </ScrollView>
+                            )}
+                          </View>
                         </View>
-                      )}
-                      {meal.photos && meal.photos.length > 0 && (
-                        <ScrollView horizontal style={styles.mealPhotos}>
-                          {meal.photos.map((photo: any, photoIndex: number) => (
-                            <Image key={photoIndex} source={{ uri: photo }} style={styles.mealPhoto} />
-                          ))}
-                        </ScrollView>
-                      )}
-                    </View>
-                  </View>
-                ))}
+                      ))}
+                    </>
+                  )}
 
-                <View style={styles.dayCost}>
-                  <Text style={styles.dayCostText}>Day Total: ${day.estimatedCost}</Text>
+                  {/* Meals */}
+                  {day.meals && day.meals.length > 0 && (
+                    <>
+                      <Text style={styles.subsectionTitle}>Meals</Text>
+                      {day.meals.map((meal: any, mealIndex: number) => (
+                        <View key={mealIndex} style={styles.mealItem}>
+                          <View style={styles.mealTime}>
+                            <Text style={styles.timeText}>🍽️ {meal.time}</Text>
+                          </View>
+                          <View style={styles.mealDetails}>
+                            <Text style={styles.mealRestaurant}>{meal.restaurant}</Text>
+                            <Text style={styles.mealCuisine}>{meal.cuisine} • ${meal.cost}</Text>
+                            {meal.rating && (
+                              <View style={styles.mealRating}>
+                                <Star width={12} height={12} color={colors.warning} fill={colors.warning} />
+                                <Text style={styles.ratingText}>{meal.rating}</Text>
+                              </View>
+                            )}
+                            {meal.photos && meal.photos.length > 0 && (
+                              <ScrollView horizontal style={styles.mealPhotos}>
+                                {meal.photos.map((photo: any, photoIndex: number) => (
+                                  <Image key={photoIndex} source={{ uri: photo }} style={styles.mealPhoto} />
+                                ))}
+                              </ScrollView>
+                            )}
+                          </View>
+                        </View>
+                      ))}
+                    </>
+                  )}
+
+                  <View style={styles.dayCost}>
+                    <Text style={styles.dayCostText}>Day Total: ${day.estimatedCost}</Text>
+                  </View>
                 </View>
               </View>
-            </View>
-          ))}
-        </View>
+            ))}
+          </View>
+        )}
 
         {/* Travel Tips */}
-        <View style={styles.section}>
-          <Text style={styles.sectionTitle}>Travel Tips</Text>
-          {itinerary.travelTips.map((tip: any, index: number) => (
-            <View key={index} style={styles.tipItem}>
-              <View style={styles.tipBullet} />
-              <Text style={styles.tipText}>{tip}</Text>
-            </View>
-          ))}
-        </View>
+        {itinerary.travelTips && itinerary.travelTips.length > 0 && (
+          <View style={styles.section}>
+            <Text style={styles.sectionTitle}>Travel Tips</Text>
+            {itinerary.travelTips.map((tip: any, index: number) => (
+              <View key={index} style={styles.tipItem}>
+                <View style={styles.tipBullet} />
+                <Text style={styles.tipText}>{tip}</Text>
+              </View>
+            ))}
+          </View>
+        )}
       </ScrollView>
     </SafeAreaView>
   );
@@ -536,5 +594,23 @@ const styles = StyleSheet.create({
     height: 45,
     borderRadius: borderRadius.sm,
     marginRight: spacing.sm,
+  },
+  mapPlaceholder: {
+    height: 200,
+    backgroundColor: colors.surface,
+    borderRadius: borderRadius.lg,
+    justifyContent: "center",
+    alignItems: "center",
+    gap: spacing.md,
+  },
+  mapPlaceholderText: {
+    ...(typography.body as TextStyle),
+    color: colors.textSecondary,
+  },
+  mapContainer: {
+    height: 300,
+    borderRadius: borderRadius.lg,
+    overflow: 'hidden',
+    backgroundColor: colors.surface,
   },
 });

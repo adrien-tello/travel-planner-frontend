@@ -6,9 +6,11 @@ import {
   TouchableOpacity,
   TextStyle,
   Image,
+  Modal,
+  TextInput,
 } from "react-native"
 import { SafeAreaView } from "react-native-safe-area-context"
-import { LogOut, MapPin, Award, TrendingUp, User as UserIcon } from "react-native-feather"
+import { LogOut, MapPin, Award, TrendingUp, User as UserIcon, Edit3, X } from "react-native-feather"
 import { useAuth } from "../../context/AuthContext"
 import { useTripStore } from "../../store/tripStore"
 import { colors, spacing, typography, borderRadius, shadows } from "../../theme/colors"
@@ -25,6 +27,8 @@ export default function ProfileScreen() {
   const [userData, setUserData] = useState<any>(null)
   const [userPreferences, setUserPreferences] = useState<any>(null)
   const [loading, setLoading] = useState(true)
+  const [showEditModal, setShowEditModal] = useState(false)
+  const [editedPreferences, setEditedPreferences] = useState<any>(null)
 
   useEffect(() => {
     loadUserData()
@@ -39,10 +43,21 @@ export default function ProfileScreen() {
       
       setUserData(storedUserData)
       setUserPreferences(storedPreferences)
+      setEditedPreferences(storedPreferences)
     } catch (error) {
       console.log('Error loading user data:', error)
     } finally {
       setLoading(false)
+    }
+  }
+
+  const handleSavePreferences = async () => {
+    try {
+      await preferencesApi.updatePreferences(editedPreferences)
+      setUserPreferences(editedPreferences)
+      setShowEditModal(false)
+    } catch (error) {
+      console.log('Error updating preferences:', error)
     }
   }
 
@@ -142,7 +157,18 @@ export default function ProfileScreen() {
 
         {/* Travel Preferences */}
         <View style={styles.section}>
-          <Text style={[styles.sectionTitle, { color: colors.textPrimary }]}>Travel Preferences</Text>
+          <View style={styles.sectionHeader}>
+            <Text style={[styles.sectionTitle, { color: colors.textPrimary }]}>Travel Preferences</Text>
+            {userPreferences && (
+              <TouchableOpacity 
+                style={[styles.editButton, { backgroundColor: colors.primary }]}
+                onPress={() => setShowEditModal(true)}
+              >
+                <Edit3 width={16} height={16} color={colors.white} />
+                <Text style={[styles.editButtonText, { color: colors.white }]}>Edit</Text>
+              </TouchableOpacity>
+            )}
+          </View>
           {userPreferences ? (
             <View style={[styles.card, { backgroundColor: colors.surface, borderColor: colors.border }]}>
               <View style={styles.infoRow}>
@@ -210,6 +236,62 @@ export default function ProfileScreen() {
         </TouchableOpacity>
       </ScrollView>
       <View style={{ height: 100 }} />
+
+      {/* Edit Preferences Modal */}
+      <Modal
+        visible={showEditModal}
+        animationType="slide"
+        transparent={true}
+        onRequestClose={() => setShowEditModal(false)}
+      >
+        <View style={styles.modalOverlay}>
+          <View style={[styles.modalContent, { backgroundColor: colors.surface }]}>
+            <View style={styles.modalHeader}>
+              <Text style={[styles.modalTitle, { color: colors.textPrimary }]}>Edit Preferences</Text>
+              <TouchableOpacity onPress={() => setShowEditModal(false)}>
+                <X width={24} height={24} color={colors.textSecondary} />
+              </TouchableOpacity>
+            </View>
+
+            <ScrollView style={styles.modalBody}>
+              <Text style={[styles.inputLabel, { color: colors.textSecondary }]}>Travel Style</Text>
+              <TextInput
+                style={[styles.input, { backgroundColor: colors.background, color: colors.textPrimary, borderColor: colors.border }]}
+                value={editedPreferences?.travelStyle || ''}
+                onChangeText={(text) => setEditedPreferences({...editedPreferences, travelStyle: text})}
+                placeholder="e.g., Adventure, Relaxation, Cultural"
+                placeholderTextColor={colors.textTertiary}
+              />
+
+              <Text style={[styles.inputLabel, { color: colors.textSecondary }]}>Budget Range</Text>
+              <TextInput
+                style={[styles.input, { backgroundColor: colors.background, color: colors.textPrimary, borderColor: colors.border }]}
+                value={editedPreferences?.budgetRange || ''}
+                onChangeText={(text) => setEditedPreferences({...editedPreferences, budgetRange: text})}
+                placeholder="e.g., low, mid, high"
+                placeholderTextColor={colors.textTertiary}
+              />
+
+              <Text style={[styles.inputLabel, { color: colors.textSecondary }]}>Interests (comma separated)</Text>
+              <TextInput
+                style={[styles.input, { backgroundColor: colors.background, color: colors.textPrimary, borderColor: colors.border }]}
+                value={editedPreferences?.interests?.join(', ') || ''}
+                onChangeText={(text) => setEditedPreferences({...editedPreferences, interests: text.split(',').map(i => i.trim())})}
+                placeholder="e.g., food, culture, adventure"
+                placeholderTextColor={colors.textTertiary}
+                multiline
+              />
+
+              <TouchableOpacity
+                style={[styles.saveButton, { backgroundColor: colors.primary }]}
+                onPress={handleSavePreferences}
+              >
+                <Text style={[styles.saveButtonText, { color: colors.white }]}>Save Changes</Text>
+              </TouchableOpacity>
+            </ScrollView>
+          </View>
+        </View>
+      </Modal>
     </SafeAreaView>
   )
 }
@@ -359,5 +441,71 @@ const styles = StyleSheet.create({
     ...(typography.bodySmall as TextStyle),
     textAlign: "center",
     paddingHorizontal: spacing.lg,
+  },
+  sectionHeader: {
+    flexDirection: "row",
+    justifyContent: "space-between",
+    alignItems: "center",
+    marginBottom: spacing.md,
+  },
+  editButton: {
+    flexDirection: "row",
+    alignItems: "center",
+    gap: spacing.xs,
+    paddingHorizontal: spacing.md,
+    paddingVertical: spacing.sm,
+    borderRadius: borderRadius.md,
+  },
+  editButtonText: {
+    ...(typography.bodySmall as TextStyle),
+    fontWeight: "600",
+  },
+  modalOverlay: {
+    flex: 1,
+    backgroundColor: "rgba(0, 0, 0, 0.5)",
+    justifyContent: "flex-end",
+  },
+  modalContent: {
+    borderTopLeftRadius: borderRadius.xxl,
+    borderTopRightRadius: borderRadius.xxl,
+    maxHeight: "80%",
+  },
+  modalHeader: {
+    flexDirection: "row",
+    justifyContent: "space-between",
+    alignItems: "center",
+    padding: spacing.lg,
+    borderBottomWidth: 1,
+    borderBottomColor: colors.border,
+  },
+  modalTitle: {
+    ...(typography.h3 as TextStyle),
+    fontWeight: "700",
+  },
+  modalBody: {
+    padding: spacing.lg,
+  },
+  inputLabel: {
+    ...(typography.bodySmall as TextStyle),
+    fontWeight: "600",
+    marginBottom: spacing.xs,
+    marginTop: spacing.md,
+  },
+  input: {
+    borderWidth: 1,
+    borderRadius: borderRadius.md,
+    padding: spacing.md,
+    ...(typography.body as TextStyle),
+  },
+  saveButton: {
+    borderRadius: borderRadius.md,
+    paddingVertical: spacing.lg,
+    alignItems: "center",
+    marginTop: spacing.xl,
+    marginBottom: spacing.lg,
+  },
+  saveButtonText: {
+    ...(typography.h4 as TextStyle),
+    fontWeight: "700",
   },
 })

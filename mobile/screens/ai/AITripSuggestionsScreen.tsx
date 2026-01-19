@@ -12,6 +12,7 @@ import { MapPin, Clock, DollarSign, Star, ArrowLeft } from "react-native-feather
 import { LinearGradient } from "expo-linear-gradient";
 import { colors, spacing, typography, borderRadius, shadows } from "../../theme/colors";
 import { GradientButton } from "../../components/GradientButton";
+import { TripMap } from "../../components/TripMap";
 import { aiTripApi, TripSuggestion } from "../../api/ai-trip.api";
 import { showToast } from "../../utils/toast";
 
@@ -100,6 +101,26 @@ export default function AITripSuggestionsScreen({ navigation }: any) {
                     ))}
                   </View>
 
+                  <Text style={styles.sectionTitle}>Map Preview</Text>
+                  <View style={styles.mapContainer}>
+                    <TripMap
+                      locations={[
+                        {
+                          id: '1',
+                          name: suggestion.destination,
+                          latitude: suggestion.coordinates?.latitude || 0,
+                          longitude: suggestion.coordinates?.longitude || 0,
+                          type: 'attraction',
+                        },
+                      ]}
+                      centerCoordinate={[
+                        suggestion.coordinates?.longitude || 0,
+                        suggestion.coordinates?.latitude || 0,
+                      ]}
+                      style={styles.map}
+                    />
+                  </View>
+
                   <Text style={styles.sectionTitle}>Activities</Text>
                   <View style={styles.activitiesList}>
                     {suggestion.activities.map((activity, index) => (
@@ -120,6 +141,7 @@ export default function AITripSuggestionsScreen({ navigation }: any) {
             ))}
           </View>
         )}
+        <View style={{ height: 100 }} />
       </ScrollView>
     </SafeAreaView>
   );
@@ -258,5 +280,14 @@ const styles = StyleSheet.create({
   },
   planButton: {
     marginTop: spacing.sm,
+  },
+  mapContainer: {
+    height: 200,
+    marginBottom: spacing.lg,
+    borderRadius: borderRadius.lg,
+    overflow: 'hidden',
+  },
+  map: {
+    flex: 1,
   },
 });
