@@ -45,44 +45,44 @@ jobs:
   # # ==========================================
   # # 🚧 VPS DEPLOYMENT
   # # ==========================================
-  # deploy-to-vps:
-  #   needs: build-and-push
-  #   runs-on: ubuntu-latest
+  deploy-to-vps:
+    needs: build-and-push
+    runs-on: ubuntu-latest
 
-  #   steps:
-  #     - name: Deploy to VPS
-  #       uses: appleboy/ssh-action@v1.0.0
-  #       with:
-  #         host: ${{ secrets.VPS_HOST }}
-  #         username: ${{ secrets.VPS_USER }}
-  #         key: ${{ secrets.VPS_SSH_KEY }}
-  #         script: |
-  #           # Navigate to app directory
-  #           cd /opt/wonderlust || mkdir -p /opt/wonderlust && cd /opt/wonderlust
+    steps:
+      - name: Deploy to VPS
+        uses: appleboy/ssh-action@v1.0.0
+        with:
+          host: ${{ secrets.VPS_HOST }}
+          username: ${{ secrets.VPS_USER }}
+          key: ${{ secrets.VPS_SSH_KEY }}
+          script: |
+            # Navigate to app directory
+            cd /opt/wonderlust || mkdir -p /opt/wonderlust && cd /opt/wonderlust
   
-  #           # Create/update .env file
-  #           cat > .env << 'EOF'
-  #           ${{ secrets.ENV_FILE }}
-  #           EOF
+            # Create/update .env file
+            cat > .env << 'EOF'
+            ${{ secrets.ENV_FILE }}
+            EOF
   
-  #           # Pull latest image from Docker Hub
-  #           docker pull ${{ secrets.DOCKERHUB_DENZEL01 }}/wonderlust-backend:latest
+            # Pull latest image from Docker Hub
+            docker pull ${{ secrets.DOCKERHUB_DENZEL01 }}/wonderlust-backend:latest
   
-  #           # Stop and remove old container
-  #           docker stop wonderlust-backend || true
-  #           docker rm wonderlust-backend || true
+            # Stop and remove old container
+            docker stop wonderlust-backend || true
+            docker rm wonderlust-backend || true
   
-  #           # Run new container
-  #           docker run -d \
-  #             --name wonderlust-backend \
-  #             --restart unless-stopped \
-  #             -p 5000:5000 \
-  #             --env-file .env \
-  #             ${{ secrets.DOCKERHUB_DENZEL01 }}/wonderlust-backend:latest
+            # Run new container
+            docker run -d \
+              --name wonderlust-backend \
+              --restart unless-stopped \
+              -p 5000:5000 \
+              --env-file .env \
+              ${{ secrets.DOCKERHUB_DENZEL01 }}/wonderlust-backend:latest
   
-  #           # Clean up old images
-  #           docker image prune -af --filter "until=72h"
+            # Clean up old images
+            docker image prune -af --filter "until=72h"
   
-  #           # Show running containers
-  #           echo "✅ Deployment complete!"
-  #           docker ps | grep wonderlust-backend
+            # Show running containers
+            echo "✅ Deployment complete!"
+            docker ps | grep wonderlust-backend
