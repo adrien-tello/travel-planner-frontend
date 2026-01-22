@@ -1,5 +1,6 @@
 import React, { useEffect, useState } from 'react';
 import { View, Text, StyleSheet, Alert } from 'react-native';
+import * as Location from 'expo-location';
 import { LocationService, LocationData } from '../services/location.service';
 import { WeatherService, WeatherData } from '../services/weather.service';
 import { NotificationService } from '../services/notification.service';
@@ -13,14 +14,16 @@ interface LiveItineraryProps {
 export function LiveItinerary({ itinerary, currentDay }: LiveItineraryProps) {
   const [location, setLocation] = useState<LocationData | null>(null);
   const [weather, setWeather] = useState<WeatherData | null>(null);
-  const [locationService] = useState(new LocationService());
-  const [weatherService] = useState(new WeatherService());
-  const [notificationService] = useState(new NotificationService());
+  const [locationSubscription, setLocationSubscription] = useState<Location.LocationSubscription | null>(null);
+  const weatherService = WeatherService.getInstance();
+  const notificationService = new NotificationService();
 
   useEffect(() => {
     initializeServices();
     return () => {
-      locationService.stopTracking();
+      if (locationSubscription) {
+        locationSubscription.remove();
+      }
     };
   }, []);
 
@@ -32,8 +35,7 @@ export function LiveItinerary({ itinerary, currentDay }: LiveItineraryProps) {
   }, [location]);
 
   const initializeServices = async () => {
-    // Request permissions
-    const locationPermission = await locationService.requestPermissions();
+    const locationPermission = await LocationService.requestPermissions();
     const notificationPermission = await notificationService.requestPermissions();
 
     if (!locationPermission) {
@@ -41,13 +43,15 @@ export function LiveItinerary({ itinerary, currentDay }: LiveItineraryProps) {
       return;
     }
 
-    // Start location tracking
-    locationService.startTracking((newLocation) => {
+    const subscription = await LocationService.watchLocation((newLocation) => {
       setLocation(newLocation);
     });
+    
+    if (subscription) {
+      setLocationSubscription(subscription);
+    }
 
-    // Get initial location
-    const currentLocation = await locationService.getCurrentLocation();
+    const currentLocation = await LocationService.getCurrentLocation();
     if (currentLocation) {
       setLocation(currentLocation);
     }
@@ -56,17 +60,20 @@ export function LiveItinerary({ itinerary, currentDay }: LiveItineraryProps) {
   const updateWeather = async () => {
     if (!location) return;
 
-    const weatherData = await weatherService.getWeather(location.latitude, location.longitude);
-    if (weatherData) {
-      setWeather(weatherData);
+    try {
+      const weatherData = await weatherService.getCurrentWeather();
+      if (weatherData) {
+        setWeather(weatherData);
 
-      // Send weather alerts for extreme conditions
-      if (weatherData.condition === 'Rain' || weatherData.condition === 'Storm') {
-        notificationService.sendWeatherAlert(
-          `${weatherData.condition} expected`,
-          'Current location'
-        );
+        if (weatherData.condition === 'Rainy' || weatherData.condition === 'Cloudy') {
+          notificationService.sendWeatherAlert(
+            `${weatherData.condition} expected`,
+            'Current location'
+          );
+        }
       }
+    } catch (error) {
+      console.error('Weather update error:', error);
     }
   };
 
@@ -143,8 +150,8 @@ export function LiveItinerary({ itinerary, currentDay }: LiveItineraryProps) {
           <Text style={styles.coordinates}>
             {location.latitude.toFixed(4)}, {location.longitude.toFixed(4)}
           </Text>
-          <Text style={styles.accuracy}>
-            Accuracy: ±{Math.round(location.accuracy)}m
+          <Text style={styles.address}>
+            {location.address || 'Address not available'}
           </Text>
         </View>
       )}
@@ -192,7 +199,7 @@ const styles = StyleSheet.create({
     color: colors.textSecondary,
     marginBottom: spacing.xs,
   },
-  accuracy: {
+  address: {
     ...typography.bodySmall,
     color: colors.textTertiary,
   },

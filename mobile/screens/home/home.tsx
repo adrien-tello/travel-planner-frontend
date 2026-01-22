@@ -13,10 +13,12 @@ import {
 import { Plus, Search, MapPin, Edit2, Trash2, Zap, Clock, DollarSign } from "react-native-feather"
 import { useTripStore } from "../../store/tripStore"
 import { useTripPlannerStore } from "../../store/tripPlannerStore"
+import { formatBudget } from "../../utils/currency";
 import { colors, spacing, typography, borderRadius, shadows } from "../../theme/colors"
 import { AIPreferencesModal } from "../../components/AIPreferencesModal"
 import { PersonalizationIndicator } from "../../components/PersonalizationIndicator"
 import { LocationStatus } from "../../components/LocationStatus"
+import { WeatherWidget } from "../../components/WeatherWidget"
 import { Card } from "../../components/Card"
 import { LinearGradient } from "expo-linear-gradient"
 import { SafeAreaView } from "react-native-safe-area-context"
@@ -159,10 +161,13 @@ export default function HomeScreen({ navigation }: any) {
       </View>
 
       <ScrollView style={styles.content} showsVerticalScrollIndicator={false}>
+        {/* Weather Widget */}
+        <WeatherWidget style={styles.weatherWidget} />
+        
         {/* Location Status Card */}
         <Card style={styles.locationStatusCard}>
           <Text style={styles.locationStatusTitle}>Travel Status</Text>
-          <LocationStatus showWeather={true} />
+          <LocationStatus showWeather={false} />
         </Card>
 
         {/* AI Feature Card with Plus Button */}
@@ -243,37 +248,38 @@ export default function HomeScreen({ navigation }: any) {
           {/* Search Suggestions */}
           {showSuggestions && searchSuggestions.length > 0 && (
             <View style={styles.suggestionsContainer}>
-              <FlatList
-                data={searchSuggestions}
-                keyExtractor={(item) => item.id}
-                renderItem={({ item }) => (
-                  <TouchableOpacity
-                    style={styles.suggestionItem}
-                    onPress={() => handleSuggestionSelect(item)}
-                    activeOpacity={0.7}
-                  >
-                    <Image source={{ uri: item.coverImage }} style={styles.suggestionImage} />
-                    <View style={styles.suggestionContent}>
-                      <Text style={styles.suggestionTitle}>{item.destination}</Text>
-                      <Text style={styles.suggestionDescription}>{item.description}</Text>
-                      <View style={styles.suggestionMeta}>
-                        <View style={styles.suggestionMetaItem}>
-                          <Clock width={14} height={14} color={colors.textSecondary} />
-                          <Text style={styles.suggestionMetaText}>{item.duration} days</Text>
-                        </View>
-                        {item.budget && (
-                          <View style={styles.suggestionMetaItem}>
-                            <DollarSign width={14} height={14} color={colors.textSecondary} />
-                            <Text style={styles.suggestionMetaText}>${item.budget}</Text>
-                          </View>
-                        )}
+            <FlatList
+              data={searchSuggestions}
+              keyExtractor={(item) => item.id}
+              renderItem={({ item }) => (
+                <TouchableOpacity
+                  style={styles.suggestionItem}
+                  onPress={() => handleSuggestionSelect(item)}
+                  activeOpacity={0.7}
+                >
+                  <Image source={{ uri: item.coverImage }} style={styles.suggestionImage} />
+                  <View style={styles.suggestionContent}>
+                    <Text style={styles.suggestionTitle}>{item.destination}</Text>
+                    <Text style={styles.suggestionDescription}>{item.description}</Text>
+                    <View style={styles.suggestionMeta}>
+                      <View style={styles.suggestionMetaItem}>
+                        <Clock width={14} height={14} color={colors.textSecondary} />
+                        <Text style={styles.suggestionMetaText}>{item.duration} days</Text>
                       </View>
+                      {item.budget && (
+                        <View style={styles.suggestionMetaItem}>
+                          <DollarSign width={14} height={14} color={colors.textSecondary} />
+                          <Text style={styles.suggestionMetaText}>${item.budget}</Text>
+                        </View>
+                      )}
                     </View>
-                  </TouchableOpacity>
-                )}
-                style={styles.suggestionsList}
-                showsVerticalScrollIndicator={false}
-              />
+                  </View>
+                </TouchableOpacity>
+              )}
+              style={styles.suggestionsList}
+              showsVerticalScrollIndicator={false}
+              nestedScrollEnabled={true}
+            />
             </View>
           )}
         </View>
@@ -329,7 +335,7 @@ export default function HomeScreen({ navigation }: any) {
                       {item.startDate} → {item.endDate}
                     </Text>
                     {item.budget && (
-                      <Text style={styles.tripBudget}>Budget: ${item.budget}</Text>
+                      <Text style={styles.tripBudget}>Budget: {formatBudget(item.budget)}</Text>
                     )}
                   </TouchableOpacity>
 
@@ -356,6 +362,7 @@ export default function HomeScreen({ navigation }: any) {
               keyExtractor={(item) => item.id}
               contentContainerStyle={styles.tripsList}
               scrollEnabled={false}
+              nestedScrollEnabled={true}
             />
           </View>
         )}
@@ -447,6 +454,9 @@ const styles = StyleSheet.create({
     flex: 1,
     paddingHorizontal: spacing.lg,
     paddingTop: spacing.lg,
+  },
+  weatherWidget: {
+    marginBottom: spacing.lg,
   },
   locationStatusCard: {
     marginBottom: spacing.lg,

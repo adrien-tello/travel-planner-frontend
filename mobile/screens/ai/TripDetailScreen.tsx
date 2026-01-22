@@ -1,4 +1,4 @@
-import React from "react";
+import React, { useState } from "react";
 import {
   View,
   Text,
@@ -9,17 +9,19 @@ import {
   TextStyle,
 } from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
-import { ArrowLeft, MapPin, Clock, DollarSign, Star, Camera, Home, Compass } from "react-native-feather";
+import { ArrowLeft, MapPin, Clock, DollarSign, Star, Camera, Home, Compass, Zap } from "react-native-feather";
 import { LinearGradient } from "expo-linear-gradient";
+import { formatBudget } from "../../utils/currency";
 import { colors, spacing, typography, borderRadius, shadows } from "../../theme/colors";
 import { GradientButton } from "../../components/GradientButton";
 import { TripSuggestion } from "../../api/ai-trip.api";
 import { itineraryApi } from "../../api/itinerary.api";
 import { showToast } from "../../utils/toast";
-import { ItineraryMap } from "../../components/ItineraryMap";
+import { TripMap } from "../../components/TripMap";
 
 export default function TripDetailScreen({ navigation, route }: any) {
   const { trip } = route.params;
+  const [selectedImageIndex, setSelectedImageIndex] = useState(0);
 
   const handleBookTrip = async () => {
     try {
@@ -48,6 +50,30 @@ export default function TripDetailScreen({ navigation, route }: any) {
       </View>
 
       <ScrollView style={styles.content} showsVerticalScrollIndicator={false}>
+        {/* Image Carousel */}
+        {trip.photos && trip.photos.length > 0 && (
+          <View style={styles.imageCarouselContainer}>
+            <Image
+              source={{ uri: trip.photos[selectedImageIndex] }}
+              style={styles.mainImage}
+            />
+            {trip.photos.length > 1 && (
+              <View style={styles.imageIndicators}>
+                {trip.photos.map((_: any, index: number) => (
+                  <TouchableOpacity
+                    key={index}
+                    style={[
+                      styles.indicator,
+                      index === selectedImageIndex && styles.indicatorActive,
+                    ]}
+                    onPress={() => setSelectedImageIndex(index)}
+                  />
+                ))}
+              </View>
+            )}
+          </View>
+        )}
+
         {/* Hero Section */}
         <LinearGradient
           colors={colors.gradientTravel}
@@ -69,16 +95,42 @@ export default function TripDetailScreen({ navigation, route }: any) {
             <MapPin width={20} height={20} color={colors.primary} />
             <Text style={styles.sectionTitle}>Location Preview</Text>
           </View>
-          <ItineraryMap
-            places={[
-              { name: trip.destination, city: trip.destination, type: 'destination' },
-              ...(trip.hotels || []).map((hotel: any) => ({
-                name: hotel.title || hotel.name,
-                city: trip.destination,
-                type: 'hotel'
-              }))
-            ]}
-          />
+          <View style={styles.fullMapContainer}>
+            <TripMap
+              locations={
+                trip.localAttractions && trip.localAttractions.length > 0
+                  ? trip.localAttractions.map(
+                      (attraction: any, idx: number) => ({
+                        id: String(idx),
+                        name: attraction.name || `Attraction ${idx + 1}`,
+                        latitude:
+                          attraction.latitude ||
+                          trip.coordinates?.latitude ||
+                          0,
+                        longitude:
+                          attraction.longitude ||
+                          trip.coordinates?.longitude ||
+                          0,
+                        type: "attraction",
+                      })
+                    )
+                  : [
+                      {
+                        id: "1",
+                        name: trip.destination,
+                        latitude: trip.coordinates?.latitude || 0,
+                        longitude: trip.coordinates?.longitude || 0,
+                        type: "primary",
+                      },
+                    ]
+              }
+              centerCoordinate={[
+                trip.coordinates?.longitude || 0,
+                trip.coordinates?.latitude || 0,
+              ]}
+              style={styles.fullMap}
+            />
+          </View>
         </View>
 
         {/* Trip Overview */}
@@ -93,7 +145,7 @@ export default function TripDetailScreen({ navigation, route }: any) {
             <View style={styles.overviewItem}>
               <DollarSign width={20} height={20} color={colors.primary} />
               <Text style={styles.overviewLabel}>Budget</Text>
-              <Text style={styles.overviewValue}>${trip.estimatedBudget}</Text>
+              <Text style={styles.overviewValue}>{formatBudget(trip.estimatedBudget)}</Text>
             </View>
             <View style={styles.overviewItem}>
               <MapPin width={20} height={20} color={colors.primary} />
@@ -124,8 +176,8 @@ export default function TripDetailScreen({ navigation, route }: any) {
           <Text style={styles.sectionTitle}>Top Highlights</Text>
           <View style={styles.highlightsList}>
             {trip.highlights.map((highlight: any, index: number) => (
-              <View key={index} style={styles.highlightItem}>
-                <View style={styles.highlightBullet} />
+              <View key={`highlight-${trip.id}-${index}`} style={styles.highlightItem}>
+                <Zap width={16} height={16} color={colors.primary} />
                 <Text style={styles.highlightText}>{highlight}</Text>
               </View>
             ))}
@@ -137,7 +189,7 @@ export default function TripDetailScreen({ navigation, route }: any) {
           <Text style={styles.sectionTitle}>Recommended Activities</Text>
           <View style={styles.activitiesGrid}>
             {trip.activities.map((activity: any, index: number) => (
-              <View key={index} style={styles.activityCard}>
+              <View key={`activity-${trip.id}-${index}`} style={styles.activityCard}>
                 <Text style={styles.activityText}>{activity}</Text>
               </View>
             ))}
@@ -201,6 +253,7 @@ export default function TripDetailScreen({ navigation, route }: any) {
             gradient={colors.gradientPurple}
           />
         </View>
+         <View style={{ height: 100 }} />
       </ScrollView>
     </SafeAreaView>
   );
@@ -229,6 +282,34 @@ const styles = StyleSheet.create({
   },
   content: {
     flex: 1,
+  },
+  imageCarouselContainer: {
+    position: "relative",
+    height: 300,
+  },
+  mainImage: {
+    width: "100%",
+    height: "100%",
+    resizeMode: "cover",
+  },
+  imageIndicators: {
+    position: "absolute",
+    bottom: spacing.lg,
+    left: 0,
+    right: 0,
+    flexDirection: "row",
+    justifyContent: "center",
+    gap: spacing.sm,
+  },
+  indicator: {
+    width: 8,
+    height: 8,
+    borderRadius: 4,
+    backgroundColor: "rgba(255, 255, 255, 0.6)",
+  },
+  indicatorActive: {
+    backgroundColor: colors.white,
+    width: 12,
   },
   heroSection: {
     padding: spacing.xl,
@@ -303,6 +384,16 @@ const styles = StyleSheet.create({
     borderRadius: borderRadius.md,
     marginRight: spacing.md,
   },
+  fullMapContainer: {
+    height: 400,
+    borderRadius: borderRadius.lg,
+    overflow: "hidden",
+    ...shadows.lg,
+    marginBottom: spacing.lg,
+  },
+  fullMap: {
+    flex: 1,
+  },
   highlightsList: {
     gap: spacing.md,
   },
@@ -310,12 +401,10 @@ const styles = StyleSheet.create({
     flexDirection: "row",
     alignItems: "center",
     gap: spacing.md,
-  },
-  highlightBullet: {
-    width: 8,
-    height: 8,
-    borderRadius: 4,
-    backgroundColor: colors.primary,
+    paddingVertical: spacing.sm,
+    paddingHorizontal: spacing.md,
+    backgroundColor: colors.surface,
+    borderRadius: borderRadius.md,
   },
   highlightText: {
     ...(typography.body as TextStyle),

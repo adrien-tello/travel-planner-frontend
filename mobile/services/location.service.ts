@@ -36,7 +36,7 @@ export class LocationService {
       return {
         latitude,
         longitude,
-        city: address?.city || address?.subAdministrativeArea || 'Unknown',
+        city: address?.city || address?.region || 'Unknown',
         country: address?.country || 'Unknown',
         address: `${address?.street || ''} ${address?.name || ''}`.trim() || 'Unknown location'
       };
@@ -70,7 +70,7 @@ export class LocationService {
           callback({
             latitude,
             longitude,
-            city: address?.city || address?.subAdministrativeArea || 'Unknown',
+            city: address?.city || address?.region || 'Unknown',
             country: address?.country || 'Unknown',
             address: `${address?.street || ''} ${address?.name || ''}`.trim() || 'Unknown location'
           });

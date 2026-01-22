@@ -13,6 +13,7 @@ import { SafeAreaView } from "react-native-safe-area-context"
 import { MapPin, Calendar, DollarSign, Zap, Users, MessageCircle } from "react-native-feather"
 import { LinearGradient } from "expo-linear-gradient"
 import { useTripStore } from "../../store/tripStore"
+import { formatBudget } from "../../utils/currency";
 import { colors, spacing, typography, borderRadius, shadows } from "../../theme/colors"
 import { GradientButton } from "../../components/GradientButton"
 import { TripMap } from "../../components/TripMap"
@@ -205,7 +206,7 @@ export default function CreateItineraryScreen({ navigation, route }: any) {
               </View>
               <TextInput
                 style={styles.input}
-                placeholder="AI will estimate based on your preferences"
+                placeholder="Budget will be estimated in FCFA"
                 placeholderTextColor={colors.textTertiary}
                 value={budget}
                 onChangeText={setBudget}

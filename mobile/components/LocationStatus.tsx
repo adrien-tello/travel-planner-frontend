@@ -86,7 +86,7 @@ export const LocationStatus: React.FC<LocationStatusProps> = ({
             {currentLocation.latitude.toFixed(6)}, {currentLocation.longitude.toFixed(6)}
           </Text>
           <Text style={styles.accuracyText}>
-            ±{Math.round(currentLocation.accuracy)}m
+            {currentLocation.city || 'Unknown location'}
           </Text>
         </View>
       )}
@@ -96,7 +96,7 @@ export const LocationStatus: React.FC<LocationStatusProps> = ({
         <View style={styles.weatherContainer}>
           <Cloud width={16} height={16} color={colors.primary} />
           <Text style={styles.weatherText}>
-            {weather.temperature}°C • {weather.description}
+            {weather.temperature}°C • {weather.condition}
           </Text>
           {(weather.condition.toLowerCase().includes('rain') || 
             weather.condition.toLowerCase().includes('storm')) && (

@@ -5,7 +5,7 @@ import { mapApi, ItineraryMapData } from "../api/map.api"
 import { colors, spacing, typography } from "../theme/colors"
 
 interface ItineraryMapProps {
-  places: Array<{ name: string; city: string; type: string }>
+  places: Array<{ name: string; city: string; type: string; latitude?: number; longitude?: number }>
 }
 
 export function ItineraryMap({ places }: ItineraryMapProps) {
@@ -16,6 +16,19 @@ export function ItineraryMap({ places }: ItineraryMapProps) {
 
   useEffect(() => {
     loadMapData()
+    // Center map on the last added place if it has coordinates
+    if (places.length > 0) {
+      const lastPlace = places[places.length - 1]
+      if (lastPlace.latitude && lastPlace.longitude && cameraRef.current) {
+        setTimeout(() => {
+          cameraRef.current?.setCamera({
+            centerCoordinate: [lastPlace.longitude!, lastPlace.latitude!],
+            zoomLevel: 14,
+            animationDuration: 1000
+          })
+        }, 500)
+      }
+    }
   }, [places])
 
   const loadMapData = async () => {
@@ -101,6 +114,25 @@ export function ItineraryMap({ places }: ItineraryMapProps) {
           animationDuration={1000}
         />
 
+        {/* Render places with coordinates directly */}
+        {places.filter(place => place.latitude && place.longitude).map((place, index) => {
+          const markerColor = place.type === 'hotel' ? colors.success : 
+                             place.type === 'restaurant' ? colors.warning : colors.primary
+          
+          return (
+            <Mapbox.PointAnnotation
+              key={`direct-place-${index}`}
+              id={`direct-place-${index}`}
+              coordinate={[place.longitude!, place.latitude!]}
+            >
+              <View style={[styles.marker, { backgroundColor: markerColor }]}>
+                <Text style={styles.markerText}>📍</Text>
+              </View>
+            </Mapbox.PointAnnotation>
+          )
+        })}
+
+        {/* Render API-fetched locations */}
         {mapData.locations?.map((location, index) => {
           const place = places[index]
           const markerColor = place?.type === 'hotel' ? colors.success : 

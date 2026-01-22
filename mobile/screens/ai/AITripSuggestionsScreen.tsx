@@ -6,10 +6,12 @@ import {
   ScrollView,
   TouchableOpacity,
   TextStyle,
+  Image,
 } from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
 import { MapPin, Clock, DollarSign, Star, ArrowLeft } from "react-native-feather";
 import { LinearGradient } from "expo-linear-gradient";
+import { formatBudget } from "../../utils/currency";
 import { colors, spacing, typography, borderRadius, shadows } from "../../theme/colors";
 import { GradientButton } from "../../components/GradientButton";
 import { TripMap } from "../../components/TripMap";
@@ -66,11 +68,16 @@ export default function AITripSuggestionsScreen({ navigation }: any) {
           <View style={styles.suggestionsContainer}>
             {suggestions.map((suggestion) => (
               <View key={suggestion.id} style={styles.suggestionCard}>
+                {/* Trip Image */}
+                {suggestion.photos && suggestion.photos.length > 0 && (
+                  <Image source={{ uri: suggestion.photos[0] }} style={styles.tripImage} />
+                )}
+                
                 <LinearGradient
                   colors={colors.gradientTravel}
                   start={{ x: 0, y: 0 }}
                   end={{ x: 1, y: 1 }}
-                  style={styles.cardHeader}
+                  style={[styles.cardHeader, suggestion.photos && suggestion.photos.length > 0 && styles.cardHeaderOverlay]}
                 >
                   <View style={styles.destinationInfo}>
                     <Text style={styles.destinationName}>{suggestion.destination}</Text>
@@ -90,14 +97,14 @@ export default function AITripSuggestionsScreen({ navigation }: any) {
                     </View>
                     <View style={styles.detailItem}>
                       <DollarSign width={16} height={16} color={colors.primary} />
-                      <Text style={styles.detailText}>${suggestion.estimatedBudget}</Text>
+                      <Text style={styles.detailText}>{formatBudget(suggestion.estimatedBudget)}</Text>
                     </View>
                   </View>
 
                   <Text style={styles.sectionTitle}>Highlights</Text>
                   <View style={styles.highlightsList}>
                     {suggestion.highlights.map((highlight, index) => (
-                      <Text key={index} style={styles.highlightItem}>• {highlight}</Text>
+                      <Text key={`highlight-${suggestion.id}-${index}`} style={styles.highlightItem}>• {highlight}</Text>
                     ))}
                   </View>
 
@@ -124,7 +131,7 @@ export default function AITripSuggestionsScreen({ navigation }: any) {
                   <Text style={styles.sectionTitle}>Activities</Text>
                   <View style={styles.activitiesList}>
                     {suggestion.activities.map((activity, index) => (
-                      <View key={index} style={styles.activityTag}>
+                      <View key={`activity-${suggestion.id}-${index}`} style={styles.activityTag}>
                         <Text style={styles.activityText}>{activity}</Text>
                       </View>
                     ))}
@@ -289,5 +296,17 @@ const styles = StyleSheet.create({
   },
   map: {
     flex: 1,
+  },
+  tripImage: {
+    width: '100%',
+    height: 200,
+    resizeMode: 'cover',
+  },
+  cardHeaderOverlay: {
+    position: 'absolute',
+    bottom: 0,
+    left: 0,
+    right: 0,
+    backgroundColor: 'rgba(0,0,0,0.4)',
   },
 });

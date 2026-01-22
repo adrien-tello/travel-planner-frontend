@@ -14,6 +14,7 @@ import {
 import { SafeAreaView } from "react-native-safe-area-context";
 import { ArrowLeft, Clock, DollarSign, MapPin, Star, Camera, Users, Calendar, X } from "react-native-feather";
 import { LinearGradient } from "expo-linear-gradient";
+import { formatBudget } from "../../utils/currency";
 import { colors, spacing, typography, borderRadius, shadows } from "../../theme/colors";
 import { DetailedItinerary } from "../../api/itinerary.api";
 import { ItineraryMap } from "../../components/ItineraryMap";
@@ -125,7 +126,7 @@ export default function DetailedItineraryScreen({ navigation, route }: any) {
               <View style={styles.statCard}>
                 <DollarSign width={16} height={16} color={colors.primary} />
                 <Text style={styles.statLabel}>Budget</Text>
-                <Text style={styles.statValue}>${itinerary.summary?.totalCost || itinerary.budget || 'N/A'}</Text>
+                <Text style={styles.statValue}>{formatBudget(itinerary.summary?.totalCost || itinerary.budget || 0)}</Text>
               </View>
               <View style={styles.statCard}>
                 <Users width={16} height={16} color={colors.primary} />

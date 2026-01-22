@@ -47,6 +47,15 @@ export interface Activity {
 }
 
 export const placesApi = {
+  searchPlace: async (query: string, type?: string, location?: string) => {
+    const params: any = { query };
+    if (type) params.type = type; // 'hotel', 'restaurant', 'attraction'
+    if (location) params.location = location;
+    
+    const response = await apiClient.get('/places/search', { params });
+    return response.data.data;
+  },
+
   getHotels: async (destination: string, budgetRange?: string): Promise<Hotel[]> => {
     const params = new URLSearchParams({ destination });
     if (budgetRange) params.append('budgetRange', budgetRange);
