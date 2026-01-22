@@ -5,38 +5,62 @@ export interface DetailedItinerary {
   id: string;
   destination: string;
   duration: number;
-  totalBudget: number;
-  days: DayItinerary[];
-  hotels: Hotel[];
-  flightInfo?: FlightInfo;
-  travelTips: string[];
-  destinationInfo?: DestinationInfo;
-  photos?: string[];
+  travelers: number;
+  budget?: number;
+  budgetRange?: string;
+  interests?: string[];
+  about: string;
   coverImage?: string;
-  mapData?: MapData;
-}
-
-export interface DestinationInfo {
-  description: string;
-  bestTimeToVisit: string;
-  climate: string;
-  culture: string;
-  language: string;
-  currency: string;
-  timeZone: string;
-  attractions: string[];
-  travelTips: string[];
-}
-
-export interface MapData {
-  latitude: number;
-  longitude: number;
-  bounds: {
-    northeast: { lat: number; lng: number };
-    southwest: { lat: number; lng: number };
+  images: string[];
+  itinerary: DaySchedule[];
+  totalVenues: number;
+  summary?: {
+    totalCost: number;
+    accommodations: any[];
+    highlights: string[];
+    bestTimeToVisit: string;
+    localCurrency: string;
+    timeZone: string;
+    weatherTips: string[];
+    packingList: string[];
   };
+  note?: string;
 }
 
+export interface DaySchedule {
+  day: number;
+  date: string;
+  dayOfWeek: string;
+  theme: string;
+  schedule: ScheduleItem[];
+  accommodation?: {
+    name: string;
+    rating: number;
+    amenities: string[];
+    priceRange: string;
+  };
+  estimatedCost: number;
+  tips: string[];
+  weather: string;
+  transportation: string[];
+}
+
+export interface ScheduleItem {
+  time: string;
+  type: 'meal' | 'activity';
+  title: string;
+  venue: {
+    name: string;
+    rating?: number;
+    priceRange?: string;
+    description?: string;
+    image?: string;
+  };
+  duration: number;
+  description: string;
+}
+
+// Legacy interfaces for backward compatibility
 export interface DayItinerary {
   day: number;
   date: string;
@@ -83,13 +107,59 @@ export interface FlightInfo {
   duration: string;
 }
 
+export interface DestinationInfo {
+  description: string;
+  bestTimeToVisit: string;
+  climate: string;
+  culture: string;
+  language: string;
+  currency: string;
+  timeZone: string;
+  attractions: string[];
+  travelTips: string[];
+}
+
+export interface MapData {
+  latitude: number;
+  longitude: number;
+  bounds: {
+    northeast: { lat: number; lng: number };
+    southwest: { lat: number; lng: number };
+  };
+}
+
 export const itineraryApi = {
-  // Generate detailed itinerary
-  generateDetailedItinerary: async (destination: string, duration: number): Promise<DetailedItinerary> => {
+  // Generate detailed itinerary using the new backend format
+  generateDetailedItinerary: async (options: { 
+    destination: string; 
+    duration: number; 
+    travelers?: number; 
+    budget?: number; 
+    interests?: string[] 
+  }): Promise<DetailedItinerary> => {
+    // Parse destination
+    const [city, country] = options.destination.split(',').map(s => s.trim());
+    
+    // Map budget to budget range
+    let budgetRange: 'low' | 'mid' | 'high' = 'mid';
+    if (options.budget && options.budget < 1000) budgetRange = 'low';
+    else if (options.budget && options.budget > 3000) budgetRange = 'high';
+    
+    const requestData = {
+      city: city || options.destination,
+      country: country || 'Unknown',
+      interests: options.interests || ['culture', 'food', 'sightseeing'],
+      budgetRange,
+      days: options.duration,
+      travelers: options.travelers,
+      budget: options.budget
+    };
+
     const response = await apiClient.post<ApiResponse<DetailedItinerary>>(
       "/itinerary/generate",
-      { destination, duration }
+      requestData
     );
+    
     return response.data.data!;
   },
 };

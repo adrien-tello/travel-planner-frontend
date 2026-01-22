@@ -1,7 +1,8 @@
 import React, { useRef, useEffect } from 'react';
-import { View, StyleSheet, Dimensions } from 'react-native';
+import { View, StyleSheet, Dimensions, Text } from 'react-native';
 import Mapbox from '../services/mapbox.config';
 import { colors, borderRadius } from '../theme/colors';
+import { useItineraryMap } from '../api/tripadvisor.api';
 
 interface Location {
   id: string;
@@ -12,7 +13,8 @@ interface Location {
 }
 
 interface TripMapProps {
-  locations: Location[];
+  locations?: Location[];
+  itineraryId?: string;
   centerCoordinate?: [number, number];
   showUserLocation?: boolean;
   style?: any;
@@ -22,11 +24,20 @@ const { width, height } = Dimensions.get('window');
 
 export const TripMap: React.FC<TripMapProps> = ({
   locations = [],
+  itineraryId,
   centerCoordinate,
   showUserLocation = true,
   style,
 }) => {
   const cameraRef = useRef<Mapbox.Camera>(null);
+  
+  // Fetch itinerary map data if itineraryId is provided
+  const { data: mapData } = useItineraryMap(itineraryId || '');
+
+  // Use either provided locations or fetched map data
+  const displayLocations = mapData?.markers || locations;
+  const displayCenter = mapData?.center || centerCoordinate || [0, 0];
+  const displayRoutes = mapData?.routes || [];
 
   useEffect(() => {
     if (locations?.length > 0 && cameraRef.current) {

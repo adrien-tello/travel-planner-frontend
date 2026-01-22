@@ -1,6 +1,6 @@
 import { Router } from "express";
 import { PreferenceController } from "../controller/prefrences.controller";
-import { authMiddleware } from "../../middleware/auth.middleware";
+import { authMiddleware } from "../middleware/auth.middleware";
 
 const router = Router();
 const preferenceController = new PreferenceController();

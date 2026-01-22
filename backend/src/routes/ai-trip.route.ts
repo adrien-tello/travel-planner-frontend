@@ -1,6 +1,6 @@
 import { Router } from "express";
 import { AITripController } from "../controller/ai-trip.controller";
-import { authMiddleware } from "../../middleware/auth.middleware";
+import { authMiddleware } from "../middleware/auth.middleware";
 
 const router = Router();
 const aiTripController = new AITripController();

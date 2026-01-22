@@ -149,15 +149,30 @@ export default function DestinationDetailScreen({ route, navigation }: any) {
           <View style={styles.section}>
             <Text style={styles.sectionTitle}>Location & Nearby Places 📍</Text>
             <TripMap
-              hotels={mockData.topHotels}
-              restaurants={mockData.topRestaurants}
-              leisureActivities={mockData.activities}
-              initialRegion={{
-                latitude: 48.8566,
-                longitude: 2.3522,
-                latitudeDelta: 0.1,
-                longitudeDelta: 0.1,
-              }}
+              locations={[
+                ...mockData.topHotels.map(hotel => ({
+                  id: hotel.id,
+                  name: hotel.name,
+                  latitude: hotel.location.latitude,
+                  longitude: hotel.location.longitude,
+                  type: 'hotel' as const
+                })),
+                ...mockData.topRestaurants.map(restaurant => ({
+                  id: restaurant.id,
+                  name: restaurant.name,
+                  latitude: restaurant.location.latitude,
+                  longitude: restaurant.location.longitude,
+                  type: 'restaurant' as const
+                })),
+                ...mockData.activities.map(activity => ({
+                  id: activity.id,
+                  name: activity.name,
+                  latitude: activity.location.latitude,
+                  longitude: activity.location.longitude,
+                  type: 'attraction' as const
+                }))
+              ]}
+              centerCoordinate={[2.3522, 48.8566]}
             />
             
             {/* Legend */}
@@ -199,6 +214,7 @@ export default function DestinationDetailScreen({ route, navigation }: any) {
                   </View>
                 </View>
               ))}
+              <View style={{ height: 100 }} />
             </ScrollView>
           </View>
 
@@ -213,6 +229,7 @@ export default function DestinationDetailScreen({ route, navigation }: any) {
             style={styles.ctaButton}
           />
         </View>
+        <View style={{ height: 100 }} />
       </ScrollView>
     </SafeAreaView>
   )

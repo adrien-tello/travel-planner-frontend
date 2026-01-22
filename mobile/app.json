@@ -58,7 +58,7 @@
       ]
     },
     "extra": {
-      "BACKEND_ENDPOINT": "https://81034f13d712.ngrok-free.app/api",
+      "BACKEND_ENDPOINT": "https://ccf76cd50c20.ngrok-free.app/api",
       "router": {},
       "eas": {
         "projectId": "c90376c3-f93c-411a-b149-f2643deb6d11"

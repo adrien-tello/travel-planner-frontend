@@ -75,8 +75,8 @@ export function ItineraryPlacesForm({
     console.log('📍 Submitting places:', validPlaces);
     onPlacesSubmit(
       validPlaces.map(p => ({
-        name: p.name,
-        city: p.city,
+        name: p.name.trim(),
+        city: p.city.trim(),
         type: p.type,
       }))
     );

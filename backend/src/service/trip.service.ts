@@ -1,8 +1,4 @@
-import { PrismaClient } from "@prisma/client";
-
-const prisma = new PrismaClient({
-  accelerateUrl: process.env.DATABASE_URL,
-});
+import { prisma } from "../conf/database";
 
 export interface TripData {
   destination: string;
@@ -32,7 +28,7 @@ export class TripService {
       orderBy: { createdAt: "desc" },
     });
 
-    return trips.map(trip => ({
+    return trips.map((trip: any) => ({
       ...trip,
       itinerary: trip.itinerary ? JSON.parse(trip.itinerary) : null,
     }));

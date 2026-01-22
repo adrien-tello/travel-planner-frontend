@@ -9,7 +9,7 @@ import {
   TextStyle,
 } from "react-native"
 import { SafeAreaView } from "react-native-safe-area-context";
-import { MapPin, Calendar, DollarSign, Clock, Star, ChevronRight } from "react-native-feather"
+import { MapPin, Calendar, DollarSign, Clock, Star, ChevronRight, Info, Zap } from "react-native-feather"
 import { LinearGradient } from "expo-linear-gradient"
 import { colors, spacing, typography, borderRadius, shadows } from "../../theme/colors"
 import { TripMap } from "../../components/TripMap"
@@ -18,192 +18,243 @@ import { GlassmorphicCard } from "../../components/GlassmorphicCard"
 import { useTripPlannerStore } from "../../store/tripPlannerStore"
 
 export default function TripPlanDetailScreen({ route }: any) {
-  const { currentPlan } = useTripPlannerStore()
-  const [selectedTab, setSelectedTab] = useState<"overview" | "hotels" | "dining" | "activities">("overview")
+  const { itinerary } = route.params || {}
+  const [selectedTab, setSelectedTab] = useState<"schedule" | "summary" | "tips">("schedule")
 
-  if (!currentPlan) {
+  // Debug logging
+  console.log('TripPlanDetailScreen - route.params:', route.params)
+  console.log('TripPlanDetailScreen - itinerary:', itinerary)
+  console.log('TripPlanDetailScreen - itinerary.itinerary:', itinerary?.itinerary)
+  console.log('TripPlanDetailScreen - itinerary.summary:', itinerary?.summary)
+
+  if (!itinerary) {
     return (
       <SafeAreaView style={styles.container}>
         <View style={styles.emptyState}>
           <Text style={styles.emptyText}>No trip plan available</Text>
+          <Text style={styles.emptyText}>Route params: {JSON.stringify(route.params)}</Text>
         </View>
       </SafeAreaView>
     )
   }
 
-  const renderOverview = () => (
+  const renderSchedule = () => (
     <View style={styles.tabContent}>
-      {/* AI Suggestions */}
-      <View style={styles.section}>
-        <Text style={styles.sectionTitle}>AI Recommendations ✨</Text>
-        {currentPlan.aiSuggestions.map((suggestion, index) => (
-          <View key={index} style={styles.suggestionCard}>
-            <View style={styles.suggestionDot} />
-            <Text style={styles.suggestionText}>{suggestion}</Text>
+      {itinerary.itinerary?.length > 0 ? (
+        itinerary.itinerary.map((day: any, dayIndex: number) => (
+          <View key={dayIndex} style={styles.dayCard}>
+            <LinearGradient
+              colors={[colors.primary + '20', colors.primaryLight + '10']}
+              style={styles.dayHeader}
+            >
+              <Text style={styles.dayNumber}>Day {day.day}</Text>
+              <Text style={styles.dayTheme}>{day.theme || 'Daily Activities'}</Text>
+              <Text style={styles.dayDate}>{new Date(day.date).toLocaleDateString()}</Text>
+            </LinearGradient>
+
+            <View style={styles.dayContent}>
+              {day.schedule?.map((item: any, itemIndex: number) => (
+                <View key={itemIndex} style={styles.scheduleItem}>
+                  <View style={styles.timeContainer}>
+                    <Text style={styles.timeText}>{item.time}</Text>
+                  </View>
+                  <View style={styles.itemDetails}>
+                    <Text style={styles.itemTitle}>{item.title}</Text>
+                    <Text style={styles.itemVenue}>{item.venue?.name || 'Venue'}</Text>
+                    <Text style={styles.itemDescription}>{item.description}</Text>
+                    <View style={styles.itemMeta}>
+                      <Text style={styles.itemType}>{item.type}</Text>
+                      {item.venue?.rating && (
+                        <View style={styles.ratingContainer}>
+                          <Star width={12} height={12} color={colors.warning} fill={colors.warning} />
+                          <Text style={styles.ratingText}>{item.venue.rating}</Text>
+                        </View>
+                      )}
+                      {item.venue?.priceRange && (
+                        <Text style={styles.priceRange}>{item.venue.priceRange}</Text>
+                      )}
+                    </View>
+                  </View>
+                </View>
+              )) || (
+                <Text style={styles.emptyText}>No schedule available for this day</Text>
+              )}
+              
+              {day.estimatedCost && (
+                <View style={styles.dayCost}>
+                  <DollarSign width={16} height={16} color={colors.primary} />
+                  <Text style={styles.dayCostText}>Daily cost: ${day.estimatedCost}</Text>
+                </View>
+              )}
+            </View>
           </View>
-        ))}
-      </View>
-
-      {/* Personalization Score */}
-      <View style={styles.section}>
-        <PersonalizationIndicator 
-          score={currentPlan.personalizationScore}
-          label="Trip Personalization Score"
-        />
-      </View>
-
-      {/* Map Overview */}
-      <View style={styles.section}>
-        <Text style={styles.sectionTitle}>Location Overview 📍</Text>
-        <TripMap
-          locations={[
-            ...currentPlan.hotels.map((hotel, index) => ({
-              id: hotel.id,
-              name: hotel.name,
-              latitude: 40.7128 + (index * 0.01), // Mock coordinates
-              longitude: -74.0060 + (index * 0.01),
-              type: 'hotel' as const,
-            })),
-            ...currentPlan.restaurants.map((restaurant, index) => ({
-              id: restaurant.id,
-              name: restaurant.name,
-              latitude: 40.7128 + (index * 0.01) + 0.005,
-              longitude: -74.0060 + (index * 0.01) + 0.005,
-              type: 'restaurant' as const,
-            })),
-            ...currentPlan.leisureActivities.map((activity, index) => ({
-              id: activity.id,
-              name: activity.name,
-              latitude: 40.7128 + (index * 0.01) + 0.01,
-              longitude: -74.0060 + (index * 0.01) + 0.01,
-              type: 'attraction' as const,
-            })),
-          ]}
-        />
-      </View>
-
-      {/* Budget Breakdown */}
-      <View style={styles.section}>
-        <Text style={styles.sectionTitle}>Estimated Budget 💰</Text>
-        <GlassmorphicCard>
-          <View style={styles.budgetRow}>
-            <Text style={styles.budgetLabel}>Total Estimated</Text>
-            <Text style={styles.budgetValue}>${currentPlan.estimatedBudget}</Text>
+        ))
+      ) : itinerary.days?.length > 0 ? (
+        // Fallback for legacy format
+        itinerary.days.map((day: any, dayIndex: number) => (
+          <View key={dayIndex} style={styles.dayCard}>
+            <LinearGradient
+              colors={[colors.primary + '20', colors.primaryLight + '10']}
+              style={styles.dayHeader}
+            >
+              <Text style={styles.dayNumber}>Day {dayIndex + 1}</Text>
+              <Text style={styles.dayTheme}>Daily Activities</Text>
+              <Text style={styles.dayDate}>{day.date}</Text>
+            </LinearGradient>
+            <View style={styles.dayContent}>
+              {day.events?.map((event: any, eventIndex: number) => (
+                <View key={eventIndex} style={styles.scheduleItem}>
+                  <View style={styles.timeContainer}>
+                    <Text style={styles.timeText}>{event.startTime}</Text>
+                  </View>
+                  <View style={styles.itemDetails}>
+                    <Text style={styles.itemTitle}>{event.title}</Text>
+                    <Text style={styles.itemVenue}>{event.location}</Text>
+                    <Text style={styles.itemDescription}>{event.description || event.category}</Text>
+                    <View style={styles.itemMeta}>
+                      <Text style={styles.itemType}>{event.category}</Text>
+                      <Text style={styles.priceRange}>${event.budget}</Text>
+                    </View>
+                  </View>
+                </View>
+              )) || <Text style={styles.emptyText}>No events for this day</Text>}
+            </View>
           </View>
-          <View style={styles.budgetBar}>
-            <View style={[styles.budgetSegment, { flex: 2, backgroundColor: colors.primary }]}>
-              <Text style={styles.budgetSegmentText}>Accommodation</Text>
-            </View>
-            <View style={[styles.budgetSegment, { flex: 1.5, backgroundColor: colors.secondary }]}>
-              <Text style={styles.budgetSegmentText}>Dining</Text>
-            </View>
-            <View style={[styles.budgetSegment, { flex: 1, backgroundColor: colors.accent3 }]}>
-              <Text style={styles.budgetSegmentText}>Activities</Text>
-            </View>
+        ))
+      ) : (
+        <View style={styles.emptyState}>
+          <Text style={styles.emptyText}>No schedule data available</Text>
+          <Text style={styles.emptyText}>Available data: {Object.keys(itinerary).join(', ')}</Text>
+        </View>
+      )}
+    </View>
+  )
+
+  const renderSummary = () => (
+    <View style={styles.tabContent}>
+      {/* Trip Overview */}
+      <GlassmorphicCard style={styles.summaryCard}>
+        <Text style={styles.summaryTitle}>Trip Overview</Text>
+        <View style={styles.summaryRow}>
+          <Text style={styles.summaryLabel}>Destination:</Text>
+          <Text style={styles.summaryValue}>{itinerary.destination}</Text>
+        </View>
+        <View style={styles.summaryRow}>
+          <Text style={styles.summaryLabel}>Duration:</Text>
+          <Text style={styles.summaryValue}>{itinerary.duration} days</Text>
+        </View>
+        <View style={styles.summaryRow}>
+          <Text style={styles.summaryLabel}>Travelers:</Text>
+          <Text style={styles.summaryValue}>{itinerary.travelers}</Text>
+        </View>
+        {itinerary.summary?.totalCost && (
+          <View style={styles.summaryRow}>
+            <Text style={styles.summaryLabel}>Estimated Cost:</Text>
+            <Text style={[styles.summaryValue, { color: colors.primary }]}>${itinerary.summary.totalCost}</Text>
+          </View>
+        )}
+      </GlassmorphicCard>
+
+      {/* Destination Info */}
+      {itinerary.summary && (
+        <GlassmorphicCard style={styles.summaryCard}>
+          <Text style={styles.summaryTitle}>Destination Information</Text>
+          <View style={styles.summaryRow}>
+            <Text style={styles.summaryLabel}>Best time to visit:</Text>
+            <Text style={styles.summaryValue}>{itinerary.summary.bestTimeToVisit}</Text>
+          </View>
+          <View style={styles.summaryRow}>
+            <Text style={styles.summaryLabel}>Currency:</Text>
+            <Text style={styles.summaryValue}>{itinerary.summary.localCurrency}</Text>
+          </View>
+          <View style={styles.summaryRow}>
+            <Text style={styles.summaryLabel}>Time zone:</Text>
+            <Text style={styles.summaryValue}>{itinerary.summary.timeZone}</Text>
           </View>
         </GlassmorphicCard>
-      </View>
+      )}
+
+      {/* Highlights */}
+      {itinerary.summary?.highlights && (
+        <GlassmorphicCard style={styles.summaryCard}>
+          <Text style={styles.summaryTitle}>Trip Highlights</Text>
+          {itinerary.summary.highlights.map((highlight: string, index: number) => (
+            <View key={index} style={styles.highlightItem}>
+              <View style={styles.highlightDot} />
+              <Text style={styles.highlightText}>{highlight}</Text>
+            </View>
+          ))}
+        </GlassmorphicCard>
+      )}
+
+      {/* Accommodations */}
+      {itinerary.summary?.accommodations?.length > 0 && (
+        <GlassmorphicCard style={styles.summaryCard}>
+          <Text style={styles.summaryTitle}>Accommodations</Text>
+          {itinerary.summary.accommodations.map((hotel: any, index: number) => (
+            <View key={index} style={styles.hotelItem}>
+              <Text style={styles.hotelName}>{hotel.name}</Text>
+              <View style={styles.hotelDetails}>
+                <Star width={14} height={14} color={colors.warning} fill={colors.warning} />
+                <Text style={styles.hotelRating}>{hotel.rating}</Text>
+                <Text style={styles.hotelPrice}>{hotel.priceRange}</Text>
+              </View>
+              <Text style={styles.hotelAmenities}>{hotel.amenities?.join(', ')}</Text>
+            </View>
+          ))}
+        </GlassmorphicCard>
+      )}
     </View>
   )
 
-  const renderHotels = () => (
+  const renderTips = () => (
     <View style={styles.tabContent}>
-      <Text style={styles.sectionTitle}>Recommended Hotels 🏨</Text>
-      {currentPlan.hotels.map((hotel) => (
-        <TouchableOpacity key={hotel.id} style={styles.placeCard}>
-          <ImageBackground
-            source={{ uri: hotel.image }}
-            style={styles.placeImage}
-            imageStyle={styles.placeImageStyle}
-          >
-            <View style={styles.placeRating}>
-              <Star width={14} height={14} color={colors.white} fill={colors.white} strokeWidth={0} />
-              <Text style={styles.placeRatingText}>{hotel.rating}</Text>
+      {/* Weather Tips */}
+      {itinerary.summary?.weatherTips && (
+        <GlassmorphicCard style={styles.summaryCard}>
+          <Text style={styles.summaryTitle}>Weather Tips</Text>
+          {itinerary.summary.weatherTips.map((tip: string, index: number) => (
+            <View key={index} style={styles.tipItem}>
+              <View style={styles.tipDot} />
+              <Text style={styles.tipText}>{tip}</Text>
             </View>
-          </ImageBackground>
-          <View style={styles.placeInfo}>
-            <Text style={styles.placeName}>{hotel.name}</Text>
-            <Text style={styles.placeDescription}>{hotel.description}</Text>
-            <View style={styles.placeDetails}>
-              <DollarSign width={16} height={16} color={colors.primary} strokeWidth={2} />
-              <Text style={styles.placePrice}>${hotel.pricePerNight}/night</Text>
-            </View>
-            <View style={styles.amenitiesContainer}>
-              {hotel.amenities.slice(0, 3).map((amenity, index) => (
-                <View key={index} style={styles.amenityChip}>
-                  <Text style={styles.amenityText}>{amenity}</Text>
-                </View>
-              ))}
-            </View>
-          </View>
-        </TouchableOpacity>
-      ))}
-    </View>
-  )
+          ))}
+        </GlassmorphicCard>
+      )}
 
-  const renderDining = () => (
-    <View style={styles.tabContent}>
-      <Text style={styles.sectionTitle}>Recommended Restaurants 🍽️</Text>
-      {currentPlan.restaurants.map((restaurant) => (
-        <TouchableOpacity key={restaurant.id} style={styles.placeCard}>
-          <ImageBackground
-            source={{ uri: restaurant.image }}
-            style={styles.placeImage}
-            imageStyle={styles.placeImageStyle}
-          >
-            <View style={styles.placeRating}>
-              <Star width={14} height={14} color={colors.white} fill={colors.white} strokeWidth={0} />
-              <Text style={styles.placeRatingText}>{restaurant.rating}</Text>
-            </View>
-          </ImageBackground>
-          <View style={styles.placeInfo}>
-            <Text style={styles.placeName}>{restaurant.name}</Text>
-            <Text style={styles.placeDescription}>{restaurant.description}</Text>
-            <View style={styles.placeDetails}>
-              <Text style={styles.placeCuisine}>{restaurant.cuisine}</Text>
-              <Text style={styles.placeSeparator}>•</Text>
-              <Text style={styles.placePrice}>{restaurant.priceRange}</Text>
-            </View>
+      {/* Packing List */}
+      {itinerary.summary?.packingList && (
+        <GlassmorphicCard style={styles.summaryCard}>
+          <Text style={styles.summaryTitle}>Packing List</Text>
+          <View style={styles.packingGrid}>
+            {itinerary.summary.packingList.map((item: string, index: number) => (
+              <View key={index} style={styles.packingItem}>
+                <Text style={styles.packingText}>{item}</Text>
+              </View>
+            ))}
           </View>
-        </TouchableOpacity>
-      ))}
-    </View>
-  )
+        </GlassmorphicCard>
+      )}
 
-  const renderActivities = () => (
-    <View style={styles.tabContent}>
-      <Text style={styles.sectionTitle}>Leisure Activities 🎯</Text>
-      {currentPlan.leisureActivities.map((activity) => (
-        <TouchableOpacity key={activity.id} style={styles.placeCard}>
-          <ImageBackground
-            source={{ uri: activity.image }}
-            style={styles.placeImage}
-            imageStyle={styles.placeImageStyle}
-          >
-            <View style={styles.categoryBadge}>
-              <Text style={styles.categoryText}>{activity.category}</Text>
-            </View>
-          </ImageBackground>
-          <View style={styles.placeInfo}>
-            <Text style={styles.placeName}>{activity.name}</Text>
-            <Text style={styles.placeDescription}>{activity.description}</Text>
-            <View style={styles.activityDetails}>
-              <View style={styles.activityDetail}>
-                <DollarSign width={16} height={16} color={colors.primary} strokeWidth={2} />
-                <Text style={styles.activityDetailText}>${activity.price}</Text>
+      {/* Daily Tips */}
+      {itinerary.itinerary?.some((day: any) => day.tips) && (
+        <GlassmorphicCard style={styles.summaryCard}>
+          <Text style={styles.summaryTitle}>Daily Tips</Text>
+          {itinerary.itinerary.map((day: any, index: number) => (
+            day.tips && (
+              <View key={index} style={styles.dailyTipSection}>
+                <Text style={styles.dailyTipDay}>Day {day.day}</Text>
+                {day.tips.map((tip: string, tipIndex: number) => (
+                  <View key={tipIndex} style={styles.tipItem}>
+                    <View style={styles.tipDot} />
+                    <Text style={styles.tipText}>{tip}</Text>
+                  </View>
+                ))}
               </View>
-              <View style={styles.activityDetail}>
-                <Clock width={16} height={16} color={colors.secondary} strokeWidth={2} />
-                <Text style={styles.activityDetailText}>{activity.duration}</Text>
-              </View>
-              <View style={styles.activityDetail}>
-                <Star width={16} height={16} color={colors.accent3} fill={colors.accent3} strokeWidth={0} />
-                <Text style={styles.activityDetailText}>{activity.rating}</Text>
-              </View>
-            </View>
-          </View>
-        </TouchableOpacity>
-      ))}
+            )
+          ))}
+        </GlassmorphicCard>
+      )}
     </View>
   )
 
@@ -216,48 +267,49 @@ export default function TripPlanDetailScreen({ route }: any) {
         end={{ x: 1, y: 1 }}
         style={styles.header}
       >
-        <Text style={styles.destination}>{currentPlan.destination}</Text>
+        <Text style={styles.destination}>{itinerary.destination}</Text>
         <View style={styles.headerDetails}>
           <View style={styles.headerDetail}>
-            <Calendar width={16} height={16} color={colors.white} strokeWidth={2} />
-            <Text style={styles.headerDetailText}>{currentPlan.startDate} - {currentPlan.endDate}</Text>
+            <Calendar width={16} height={16} color={colors.white} />
+            <Text style={styles.headerDetailText}>{itinerary.duration} days</Text>
           </View>
           <View style={styles.headerDetail}>
-            <DollarSign width={16} height={16} color={colors.white} strokeWidth={2} />
-            <Text style={styles.headerDetailText}>${currentPlan.estimatedBudget}</Text>
+            <DollarSign width={16} height={16} color={colors.white} />
+            <Text style={styles.headerDetailText}>${itinerary.summary?.totalCost || itinerary.budget || 'N/A'}</Text>
           </View>
         </View>
       </LinearGradient>
 
-      {/* Tabs */}
-      <View style={styles.tabsContainer}>
-        <ScrollView horizontal showsHorizontalScrollIndicator={false}>
-          {[
-            { key: "overview", label: "Overview", icon: "📋" },
-            { key: "hotels", label: "Hotels", icon: "🏨" },
-            { key: "dining", label: "Dining", icon: "🍽️" },
-            { key: "activities", label: "Activities", icon: "🎯" },
-          ].map((tab) => (
-            <TouchableOpacity
-              key={tab.key}
-              style={[styles.tab, selectedTab === tab.key && styles.tabActive]}
-              onPress={() => setSelectedTab(tab.key as any)}
-            >
-              <Text style={styles.tabIcon}>{tab.icon}</Text>
-              <Text style={[styles.tabLabel, selectedTab === tab.key && styles.tabLabelActive]}>
-                {tab.label}
-              </Text>
-            </TouchableOpacity>
-          ))}
-        </ScrollView>
+      {/* Tab Navigation */}
+      <View style={styles.tabContainer}>
+        <TouchableOpacity
+          style={[styles.tab, selectedTab === "schedule" && styles.activeTab]}
+          onPress={() => setSelectedTab("schedule")}
+        >
+          <Clock width={20} height={20} color={selectedTab === "schedule" ? colors.primary : colors.textSecondary} />
+          <Text style={[styles.tabText, selectedTab === "schedule" && styles.activeTabText]}>Schedule</Text>
+        </TouchableOpacity>
+        <TouchableOpacity
+          style={[styles.tab, selectedTab === "summary" && styles.activeTab]}
+          onPress={() => setSelectedTab("summary")}
+        >
+          <Info width={20} height={20} color={selectedTab === "summary" ? colors.primary : colors.textSecondary} />
+          <Text style={[styles.tabText, selectedTab === "summary" && styles.activeTabText]}>Summary</Text>
+        </TouchableOpacity>
+        <TouchableOpacity
+          style={[styles.tab, selectedTab === "tips" && styles.activeTab]}
+          onPress={() => setSelectedTab("tips")}
+        >
+          <Zap width={20} height={20} color={selectedTab === "tips" ? colors.primary : colors.textSecondary} />
+          <Text style={[styles.tabText, selectedTab === "tips" && styles.activeTabText]}>Tips</Text>
+        </TouchableOpacity>
       </View>
 
       {/* Content */}
       <ScrollView style={styles.content} showsVerticalScrollIndicator={false}>
-        {selectedTab === "overview" && renderOverview()}
-        {selectedTab === "hotels" && renderHotels()}
-        {selectedTab === "dining" && renderDining()}
-        {selectedTab === "activities" && renderActivities()}
+        {selectedTab === "schedule" && renderSchedule()}
+        {selectedTab === "summary" && renderSummary()}
+        {selectedTab === "tips" && renderTips()}
       </ScrollView>
     </SafeAreaView>
   )
@@ -268,244 +320,294 @@ const styles = StyleSheet.create({
     flex: 1,
     backgroundColor: colors.background,
   },
+  emptyState: {
+    flex: 1,
+    justifyContent: 'center',
+    alignItems: 'center',
+    padding: spacing.xl,
+  },
+  emptyText: {
+    ...(typography.h3 as TextStyle),
+    color: colors.textSecondary,
+    textAlign: 'center',
+  },
   header: {
-    paddingHorizontal: spacing.xl,
-    paddingTop: spacing.xl,
-    paddingBottom: spacing.xl,
+    padding: spacing.xl,
+    paddingBottom: spacing.lg,
   },
   destination: {
     ...(typography.h1 as TextStyle),
     color: colors.white,
+    textAlign: 'center',
     marginBottom: spacing.md,
   },
   headerDetails: {
-    flexDirection: "row",
+    flexDirection: 'row',
+    justifyContent: 'center',
     gap: spacing.lg,
   },
   headerDetail: {
-    flexDirection: "row",
-    alignItems: "center",
+    flexDirection: 'row',
+    alignItems: 'center',
     gap: spacing.xs,
   },
   headerDetailText: {
-    ...(typography.bodySmall as TextStyle),
-    color: "rgba(255, 255, 255, 0.95)",
-    fontWeight: "600",
+    ...(typography.body as TextStyle),
+    color: colors.white,
+    fontWeight: '600',
   },
-  tabsContainer: {
+  tabContainer: {
+    flexDirection: 'row',
+    backgroundColor: colors.surface,
     borderBottomWidth: 1,
     borderBottomColor: colors.border,
-    backgroundColor: colors.surface,
   },
   tab: {
-    flexDirection: "row",
-    alignItems: "center",
+    flex: 1,
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'center',
     gap: spacing.xs,
-    paddingHorizontal: spacing.lg,
     paddingVertical: spacing.md,
-    borderBottomWidth: 2,
-    borderBottomColor: "transparent",
   },
-  tabActive: {
+  activeTab: {
+    borderBottomWidth: 2,
     borderBottomColor: colors.primary,
   },
-  tabIcon: {
-    fontSize: 18,
-  },
-  tabLabel: {
-    ...(typography.body as TextStyle),
+  tabText: {
+    ...(typography.bodyMedium as TextStyle),
     color: colors.textSecondary,
-    fontWeight: "600",
   },
-  tabLabelActive: {
+  activeTabText: {
     color: colors.primary,
+    fontWeight: '600',
   },
   content: {
     flex: 1,
   },
   tabContent: {
-    padding: spacing.xl,
+    padding: spacing.lg,
   },
-  section: {
-    marginBottom: spacing.xl,
+  dayCard: {
+    backgroundColor: colors.surface,
+    borderRadius: borderRadius.lg,
+    marginBottom: spacing.lg,
+    overflow: 'hidden',
+    ...shadows.md,
   },
-  sectionTitle: {
+  dayHeader: {
+    padding: spacing.md,
+    alignItems: 'center',
+  },
+  dayNumber: {
+    ...(typography.h3 as TextStyle),
+    color: colors.primary,
+    fontWeight: '700',
+  },
+  dayTheme: {
+    ...(typography.bodyMedium as TextStyle),
+    color: colors.textPrimary,
+    fontWeight: '600',
+  },
+  dayDate: {
+    ...(typography.caption as TextStyle),
+    color: colors.textSecondary,
+  },
+  dayContent: {
+    padding: spacing.md,
+  },
+  scheduleItem: {
+    flexDirection: 'row',
+    marginBottom: spacing.md,
+    paddingBottom: spacing.md,
+    borderBottomWidth: 1,
+    borderBottomColor: colors.border,
+  },
+  timeContainer: {
+    width: 60,
+    alignItems: 'center',
+    marginRight: spacing.md,
+  },
+  timeText: {
+    ...(typography.caption as TextStyle),
+    color: colors.primary,
+    fontWeight: '600',
+    backgroundColor: colors.primary + '20',
+    paddingHorizontal: spacing.xs,
+    paddingVertical: 2,
+    borderRadius: borderRadius.sm,
+  },
+  itemDetails: {
+    flex: 1,
+  },
+  itemTitle: {
+    ...(typography.bodyMedium as TextStyle),
+    color: colors.textPrimary,
+    fontWeight: '600',
+    marginBottom: 2,
+  },
+  itemVenue: {
+    ...(typography.caption as TextStyle),
+    color: colors.textSecondary,
+    marginBottom: 4,
+  },
+  itemDescription: {
+    ...(typography.small as TextStyle),
+    color: colors.textSecondary,
+    marginBottom: spacing.xs,
+  },
+  itemMeta: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: spacing.sm,
+  },
+  itemType: {
+    ...(typography.small as TextStyle),
+    color: colors.primary,
+    backgroundColor: colors.primary + '20',
+    paddingHorizontal: spacing.xs,
+    paddingVertical: 2,
+    borderRadius: borderRadius.sm,
+    textTransform: 'capitalize',
+  },
+  ratingContainer: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 2,
+  },
+  ratingText: {
+    ...(typography.small as TextStyle),
+    color: colors.textSecondary,
+  },
+  priceRange: {
+    ...(typography.small as TextStyle),
+    color: colors.textSecondary,
+  },
+  dayCost: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: spacing.xs,
+    marginTop: spacing.sm,
+    paddingTop: spacing.sm,
+    borderTopWidth: 1,
+    borderTopColor: colors.border,
+  },
+  dayCostText: {
+    ...(typography.bodyMedium as TextStyle),
+    color: colors.primary,
+    fontWeight: '600',
+  },
+  summaryCard: {
+    marginBottom: spacing.lg,
+  },
+  summaryTitle: {
     ...(typography.h3 as TextStyle),
     color: colors.textPrimary,
     marginBottom: spacing.md,
   },
-  suggestionCard: {
-    flexDirection: "row",
-    alignItems: "flex-start",
-    gap: spacing.md,
-    backgroundColor: colors.primaryLight + "10",
-    padding: spacing.md,
-    borderRadius: borderRadius.md,
-    borderLeftWidth: 3,
-    borderLeftColor: colors.primary,
+  summaryRow: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
     marginBottom: spacing.sm,
   },
-  suggestionDot: {
+  summaryLabel: {
+    ...(typography.body as TextStyle),
+    color: colors.textSecondary,
+  },
+  summaryValue: {
+    ...(typography.bodyMedium as TextStyle),
+    color: colors.textPrimary,
+    fontWeight: '600',
+  },
+  highlightItem: {
+    flexDirection: 'row',
+    alignItems: 'flex-start',
+    marginBottom: spacing.xs,
+  },
+  highlightDot: {
     width: 6,
     height: 6,
     borderRadius: 3,
     backgroundColor: colors.primary,
-    marginTop: spacing.sm,
+    marginTop: 6,
+    marginRight: spacing.sm,
   },
-  suggestionText: {
+  highlightText: {
     ...(typography.body as TextStyle),
     color: colors.textPrimary,
     flex: 1,
   },
-  budgetRow: {
-    flexDirection: "row",
-    justifyContent: "space-between",
-    alignItems: "center",
-    marginBottom: spacing.lg,
-  },
-  budgetLabel: {
-    ...(typography.h4 as TextStyle),
-    color: colors.textPrimary,
-  },
-  budgetValue: {
-    ...(typography.h2 as TextStyle),
-    color: colors.primary,
-    fontWeight: "700",
-  },
-  budgetBar: {
-    flexDirection: "row",
-    height: 60,
-    borderRadius: borderRadius.md,
-    overflow: "hidden",
-    gap: 2,
-  },
-  budgetSegment: {
-    justifyContent: "center",
-    alignItems: "center",
-    padding: spacing.sm,
-  },
-  budgetSegmentText: {
-    ...(typography.caption as TextStyle),
-    color: colors.white,
-    fontWeight: "700",
-    textAlign: "center",
-  },
-  placeCard: {
-    backgroundColor: colors.surface,
-    borderRadius: borderRadius.lg,
+  hotelItem: {
     marginBottom: spacing.md,
-    overflow: "hidden",
-    ...shadows.md,
+    paddingBottom: spacing.md,
+    borderBottomWidth: 1,
+    borderBottomColor: colors.border,
   },
-  placeImage: {
-    width: "100%",
-    height: 160,
-    justifyContent: "flex-end",
-    padding: spacing.md,
+  hotelName: {
+    ...(typography.bodyMedium as TextStyle),
+    color: colors.textPrimary,
+    fontWeight: '600',
+    marginBottom: spacing.xs,
   },
-  placeImageStyle: {
-    resizeMode: "cover",
-  },
-  placeRating: {
-    flexDirection: "row",
-    alignItems: "center",
+  hotelDetails: {
+    flexDirection: 'row',
+    alignItems: 'center',
     gap: spacing.xs,
-    backgroundColor: "rgba(0, 0, 0, 0.6)",
+    marginBottom: spacing.xs,
+  },
+  hotelRating: {
+    ...(typography.small as TextStyle),
+    color: colors.textSecondary,
+  },
+  hotelPrice: {
+    ...(typography.small as TextStyle),
+    color: colors.textSecondary,
+  },
+  hotelAmenities: {
+    ...(typography.small as TextStyle),
+    color: colors.textSecondary,
+  },
+  tipItem: {
+    flexDirection: 'row',
+    alignItems: 'flex-start',
+    marginBottom: spacing.xs,
+  },
+  tipDot: {
+    width: 4,
+    height: 4,
+    borderRadius: 2,
+    backgroundColor: colors.secondary,
+    marginTop: 6,
+    marginRight: spacing.sm,
+  },
+  tipText: {
+    ...(typography.body as TextStyle),
+    color: colors.textPrimary,
+    flex: 1,
+  },
+  packingGrid: {
+    flexDirection: 'row',
+    flexWrap: 'wrap',
+    gap: spacing.xs,
+  },
+  packingItem: {
+    backgroundColor: colors.primary + '20',
     paddingHorizontal: spacing.sm,
     paddingVertical: spacing.xs,
     borderRadius: borderRadius.sm,
-    alignSelf: "flex-start",
   },
-  placeRatingText: {
-    ...(typography.caption as TextStyle),
-    color: colors.white,
-    fontWeight: "700",
+  packingText: {
+    ...(typography.small as TextStyle),
+    color: colors.primary,
   },
-  categoryBadge: {
-    backgroundColor: "rgba(0, 0, 0, 0.6)",
-    paddingHorizontal: spacing.md,
-    paddingVertical: spacing.xs,
-    borderRadius: borderRadius.sm,
-    alignSelf: "flex-start",
-  },
-  categoryText: {
-    ...(typography.caption as TextStyle),
-    color: colors.white,
-    fontWeight: "700",
-    textTransform: "uppercase",
-  },
-  placeInfo: {
-    padding: spacing.lg,
-  },
-  placeName: {
-    ...(typography.h4 as TextStyle),
-    color: colors.textPrimary,
-    marginBottom: spacing.sm,
-  },
-  placeDescription: {
-    ...(typography.bodySmall as TextStyle),
-    color: colors.textSecondary,
+  dailyTipSection: {
     marginBottom: spacing.md,
-    lineHeight: 20,
   },
-  placeDetails: {
-    flexDirection: "row",
-    alignItems: "center",
-    gap: spacing.sm,
-  },
-  placePrice: {
-    ...(typography.bodySmall as TextStyle),
+  dailyTipDay: {
+    ...(typography.bodyMedium as TextStyle),
     color: colors.primary,
-    fontWeight: "700",
+    fontWeight: '600',
+    marginBottom: spacing.xs,
   },
-  placeCuisine: {
-    ...(typography.bodySmall as TextStyle),
-    color: colors.textPrimary,
-    fontWeight: "600",
-  },
-  placeSeparator: {
-    ...(typography.bodySmall as TextStyle),
-    color: colors.textTertiary,
-  },
-  amenitiesContainer: {
-    flexDirection: "row",
-    flexWrap: "wrap",
-    gap: spacing.sm,
-    marginTop: spacing.md,
-  },
-  amenityChip: {
-    backgroundColor: colors.primaryLight + "15",
-    paddingHorizontal: spacing.md,
-    paddingVertical: spacing.xs,
-    borderRadius: borderRadius.sm,
-  },
-  amenityText: {
-    ...(typography.caption as TextStyle),
-    color: colors.primary,
-    fontWeight: "600",
-  },
-  activityDetails: {
-    flexDirection: "row",
-    gap: spacing.lg,
-    marginTop: spacing.sm,
-  },
-  activityDetail: {
-    flexDirection: "row",
-    alignItems: "center",
-    gap: spacing.xs,
-  },
-  activityDetailText: {
-    ...(typography.bodySmall as TextStyle),
-    color: colors.textPrimary,
-    fontWeight: "600",
-  },
-  emptyState: {
-    flex: 1,
-    justifyContent: "center",
-    alignItems: "center",
-  },
-  emptyText: {
-    ...(typography.h3 as TextStyle),
-    color: colors.textSecondary,
-  },
-})
+});

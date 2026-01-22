@@ -1,5 +1,6 @@
 import { UserPreferences } from "../types/prefrences";
-import { OpenAIService } from "./openai.service";
+import { TripadvisorService } from "./tripadvisor.service";
+import { PlacesSyncService } from "./places-sync.service";
 
 export interface TripSuggestion {
   id: string;
@@ -17,22 +18,21 @@ export interface TripSuggestion {
   transportation: string[];
   tips: string[];
   images: string[];
+  hotels: any[];
+  restaurants: any[];
+  attractions: any[];
 }
 
 export class AITripPlannerService {
-  private openAIService = new OpenAIService();
-  private serpApiKey = process.env.SERP_API_KEY || 'demo';
-  private geminiApiKey = process.env.GEMINI_API_KEY;
-  private googlePhotosApiBase = process.env.GOOGLE_PHOTO_API_KEY?.split('?')[0] || 'https://serpapi.com/search.json';
+  private tripadvisorService = new TripadvisorService();
+  private placesSyncService = new PlacesSyncService();
 
   async generateTripSuggestions(preferences: UserPreferences): Promise<TripSuggestion[]> {
     try {
-      // Step 1: Generate destinations using OpenAI
-      const destinations = await this.generateDestinationsWithOpenAI(preferences);
-
-      // Step 2: Enhance each destination with detailed info and images
+      const destinations = await this.generateDestinationsWithAI(preferences);
+      
       const enhancedSuggestions = await Promise.all(
-        destinations.map(dest => this.enhanceDestinationWithOpenAI(dest, preferences))
+        destinations.map(dest => this.enhanceDestinationWithTripadvisor(dest, preferences))
       );
 
       return enhancedSuggestions.filter(Boolean).slice(0, 5);
@@ -42,103 +42,9 @@ export class AITripPlannerService {
     }
   }
 
-  private async getGeminiDestinations(preferences: UserPreferences): Promise<any[]> {
-    const prompt = this.buildGeminiPrompt(preferences);
-    
-    const response = await fetch(`https://generativelanguage.googleapis.com/v1beta/models/gemini-pro:generateContent?key=${this.geminiApiKey}`, {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({
-        contents: [{ parts: [{ text: prompt }] }]
-      })
-    });
-
-    const data = await response.json();
-    const aiResponse = data.candidates[0].content.parts[0].text;
-    return this.parseAIResponse(aiResponse);
-  }
-
-  private async enhanceDestinationData(destination: any, preferences: UserPreferences): Promise<TripSuggestion> {
-    try {
-      // Get place data first to get data_id for photos
-      const placeData = await this.getPlaceData(destination.destination);
-      
-      // Get hotels, photos, and attractions in parallel
-      const [hotels, photos, attractions] = await Promise.all([
-        this.getHotels(destination.destination),
-        this.getDestinationPhotos(placeData?.data_id, destination.destination),
-        this.getLocalAttractions(destination.destination)
-      ]);
-
-      return {
-        ...destination,
-        hotels: hotels.slice(0, 3),
-        photos: photos.slice(0, 5),
-        localAttractions: attractions.slice(0, 5),
-        estimatedBudget: this.calculateBudget(destination, preferences)
-      };
-    } catch (error) {
-      console.error(`Error enhancing ${destination.destination}:`, error);
-      return destination;
-    }
-  }
-
-  private async getHotels(destination: string): Promise<any[]> {
-    try {
-      const response = await fetch(`https://serpapi.com/search.json?engine=google_local&q=hotels+${encodeURIComponent(destination)}&api_key=${this.serpApiKey}`);
-      const data = await response.json();
-      return data.local_results || [];
-    } catch (error) {
-      console.error('Hotel API error:', error);
-      return [];
-    }
-  }
-
-  private async getPlaceData(destination: string): Promise<any> {
-    try {
-      const response = await fetch(`https://serpapi.com/search.json?engine=google_maps&q=${encodeURIComponent(destination)}&api_key=${this.serpApiKey}`);
-      const data = await response.json();
-      return data.place_results?.[0] || null;
-    } catch (error) {
-      console.error('Place data API error:', error);
-      return null;
-    }
-  }
-
-  private async getDestinationPhotos(dataId: string | null, destination: string): Promise<string[]> {
-    try {
-      if (dataId) {
-        // Use Google Photos API with data_id
-        const response = await fetch(`${this.googlePhotosApiBase}?engine=google_maps_photos&data_id=${dataId}&api_key=${this.serpApiKey}`);
-        const data = await response.json();
-        return data.photos?.map((p: any) => p.image) || [];
-      } else {
-        // Fallback to maps search for photos
-        const response = await fetch(`https://serpapi.com/search.json?engine=google_maps&q=${encodeURIComponent(destination)}&api_key=${this.serpApiKey}`);
-        const data = await response.json();
-        return data.place_results?.photos?.map((p: any) => p.image) || [];
-      }
-    } catch (error) {
-      console.error('Photos API error:', error);
-      return [];
-    }
-  }
-
-  private async getLocalAttractions(destination: string): Promise<any[]> {
-    try {
-      const response = await fetch(`https://serpapi.com/search.json?engine=google_local&q=attractions+${encodeURIComponent(destination)}&api_key=${this.serpApiKey}`);
-      const data = await response.json();
-      return data.local_results || [];
-    } catch (error) {
-      console.error('Attractions API error:', error);
-      return [];
-    }
-  }
-
-  private async generateDestinationsWithOpenAI(preferences: UserPreferences): Promise<any[]> {
+  private async generateDestinationsWithAI(preferences: UserPreferences): Promise<any[]> {
     const prompt = this.buildDestinationPrompt(preferences);
 
-    // Use Gemini instead of OpenAI
     const { GoogleGenerativeAI } = require('@google/generative-ai');
     const genAI = new GoogleGenerativeAI(process.env.GEMINI_API_KEY);
     const model = genAI.getGenerativeModel({ model: 'gemini-1.5-flash' });
@@ -150,32 +56,59 @@ export class AITripPlannerService {
     return this.parseAIResponse(text);
   }
 
-  private async enhanceDestinationWithOpenAI(destination: any, preferences: UserPreferences): Promise<TripSuggestion> {
+  private async enhanceDestinationWithTripadvisor(destination: any, preferences: UserPreferences): Promise<TripSuggestion> {
     try {
-      // Get detailed destination info using OpenAI
-      const destinationInfo = await this.openAIService.getDestinationInfo(destination.destination.split(',')[0], destination.country);
+      // Get destination coordinates (you'd need to implement this)
+      const coordinates = await this.getDestinationCoordinates(destination.destination);
+      
+      if (coordinates) {
+        // Sync TripAdvisor data
+        const places = await this.placesSyncService.syncPlacesForDestination({
+          destinationId: destination.id,
+          latitude: coordinates.lat,
+          longitude: coordinates.lng,
+          interests: preferences.interests,
+          budgetRange: preferences.budgetRange as 'low' | 'mid' | 'high',
+        });
 
-      // Generate images for the destination
-      const images = await this.openAIService.generateDestinationImages(
-        destination.destination.split(',')[0],
-        destination.country,
-        preferences.interests
-      );
+        // Categorize places
+        const hotels = places.filter(p => p.type === 'HOTEL').slice(0, 3);
+        const restaurants = places.filter(p => p.type === 'RESTAURANT').slice(0, 5);
+        const attractions = places.filter(p => p.type === 'ATTRACTION').slice(0, 5);
 
-      return {
-        ...destination,
-        climate: destinationInfo.climate,
-        overview: destinationInfo.overview,
-        localCuisine: destinationInfo.localCuisine,
-        transportation: destinationInfo.transportation,
-        tips: destinationInfo.tips,
-        images,
-        estimatedBudget: this.calculateBudget(destination, preferences)
-      };
+        return {
+          ...destination,
+          hotels,
+          restaurants,
+          attractions,
+          estimatedBudget: this.calculateBudget(destination, preferences),
+          climate: 'Varies by season',
+          overview: `Discover ${destination.destination} with curated recommendations from TripAdvisor`,
+          localCuisine: restaurants.map(r => r.name).slice(0, 3),
+          transportation: ['Public transport', 'Taxi', 'Walking'],
+          tips: ['Book accommodations early', 'Try local cuisine', 'Check weather'],
+          images: places.filter(p => p.imageUrl).map(p => p.imageUrl).slice(0, 3),
+        };
+      }
+
+      return destination;
     } catch (error) {
       console.error(`Error enhancing ${destination.destination}:`, error);
       return destination;
     }
+  }
+
+  private async getDestinationCoordinates(destination: string): Promise<{lat: number, lng: number} | null> {
+    // Simple geocoding - in production, use a proper geocoding service
+    const cityCoords: {[key: string]: {lat: number, lng: number}} = {
+      'Paris, France': { lat: 48.8566, lng: 2.3522 },
+      'Tokyo, Japan': { lat: 35.6762, lng: 139.6503 },
+      'New York, USA': { lat: 40.7128, lng: -74.0060 },
+      'London, UK': { lat: 51.5074, lng: -0.1278 },
+      'Rome, Italy': { lat: 41.9028, lng: 12.4964 },
+    };
+    
+    return cityCoords[destination] || null;
   }
 
   private calculateBudget(destination: any, preferences: UserPreferences): number {
@@ -213,30 +146,6 @@ export class AITripPlannerService {
     }]`;
   }
 
-  private buildGeminiPrompt(preferences: UserPreferences): string {
-    return `As a travel expert, suggest 8 destinations based on these preferences:
-
-    Travel Style: ${preferences.travelStyle}
-    Budget: ${preferences.budgetRange}
-    Interests: ${preferences.interests.join(', ')}
-    Group Size: ${preferences.planning?.groupSize || 1}
-    Kids: ${preferences.planning?.travelWithKids || false}
-
-    Return JSON array:
-    [{
-      "id": "unique_id",
-      "destination": "City, Country",
-      "country": "Country",
-      "duration": 5,
-      "highlights": ["attraction1", "attraction2", "attraction3"],
-      "bestTimeToVisit": "Season",
-      "activities": ["activity1", "activity2", "activity3"],
-      "matchScore": 85
-    }]`;
-  }
-
-
-
   private parseAIResponse(response: string): any[] {
     try {
       const jsonMatch = response.match(/\[.*\]/s);
@@ -270,6 +179,9 @@ export class AITripPlannerService {
       transportation: ["Public transport", "Walking", "Taxis"],
       tips: ["Check weather", "Book in advance", "Learn basic phrases"],
       images: [],
+      hotels: [],
+      restaurants: [],
+      attractions: [],
     }));
   }
 }

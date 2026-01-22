@@ -1,6 +1,6 @@
 import { Router } from "express";
 import { TripController } from "../controller/trip.controller";
-import { authMiddleware } from "../../middleware/auth.middleware";
+import { authMiddleware } from "../middleware/auth.middleware";
 
 const router = Router();
 const tripController = new TripController();

@@ -63,14 +63,13 @@ export function ItineraryMap({ places }: ItineraryMapProps) {
     )
   }
 
-  if (error && !mapData) {
+  if (error || !mapData) {
     // Show fallback map with default location
     return (
       <View style={styles.container}>
         <Mapbox.MapView
           style={styles.map}
           styleURL="mapbox://styles/mapbox/streets-v12"
-          centerCoordinate={[0, 20]} // Default center
         >
           <Mapbox.Camera
             ref={cameraRef}
@@ -80,7 +79,7 @@ export function ItineraryMap({ places }: ItineraryMapProps) {
           />
         </Mapbox.MapView>
         <View style={styles.errorBanner}>
-          <Text style={styles.errorBannerText}>{error}</Text>
+          <Text style={styles.errorBannerText}>{error || 'Unable to load map'}</Text>
         </View>
       </View>
     )
@@ -94,7 +93,6 @@ export function ItineraryMap({ places }: ItineraryMapProps) {
       <Mapbox.MapView
         style={styles.map}
         styleURL="mapbox://styles/mapbox/streets-v12"
-        centerCoordinate={[centerLng, centerLat]}
       >
         <Mapbox.Camera
           ref={cameraRef}
@@ -103,17 +101,23 @@ export function ItineraryMap({ places }: ItineraryMapProps) {
           animationDuration={1000}
         />
 
-        {mapData.locations?.map((location, index) => (
-          <Mapbox.PointAnnotation
-            key={index}
-            id={`location-${index}`}
-            coordinate={[location.longitude, location.latitude]}
-          >
-            <View style={[styles.marker, { backgroundColor: colors.primary }]}>
-              <Text style={styles.markerText}>{index + 1}</Text>
-            </View>
-          </Mapbox.PointAnnotation>
-        ))}
+        {mapData.locations?.map((location, index) => {
+          const place = places[index]
+          const markerColor = place?.type === 'hotel' ? colors.success : 
+                             place?.type === 'restaurant' ? colors.warning : colors.primary
+          
+          return (
+            <Mapbox.PointAnnotation
+              key={`location-${index}`}
+              id={`location-${index}`}
+              coordinate={[location.longitude, location.latitude]}
+            >
+              <View style={[styles.marker, { backgroundColor: markerColor }]}>
+                <Text style={styles.markerText}>{index + 1}</Text>
+              </View>
+            </Mapbox.PointAnnotation>
+          )
+        })}
       </Mapbox.MapView>
     </View>
   )

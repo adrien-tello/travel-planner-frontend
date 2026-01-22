@@ -1,0 +1,10 @@
+"use strict";
+Object.defineProperty(exports, "__esModule", { value: true });
+const express_1 = require("express");
+const map_controller_1 = require("../controller/map.controller");
+const router = (0, express_1.Router)();
+const mapController = new map_controller_1.MapController();
+router.get('/location', mapController.getPlaceLocation.bind(mapController));
+router.get('/route', mapController.getRoute.bind(mapController));
+router.post('/itinerary', mapController.getItineraryMap.bind(mapController));
+exports.default = router;

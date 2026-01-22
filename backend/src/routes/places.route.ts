@@ -1,12 +1,12 @@
 import { Router } from 'express';
 import { PlacesController } from '../controller/places.controller';
-import { authMiddleware } from '../../middleware/auth.middleware';
+import { authMiddleware } from '../middleware/auth.middleware';
 
 const router = Router();
 const placesController = new PlacesController();
 
-router.get('/hotels', authMiddleware, (req, res) => placesController.getHotels(req, res));
-router.get('/restaurants', authMiddleware, (req, res) => placesController.getRestaurants(req, res));
-router.get('/activities', authMiddleware, (req, res) => placesController.getActivities(req, res));
+router.post('/tripadvisor/sync', authMiddleware, placesController.syncTripadvisorPlaces);
+router.get('/tripadvisor/:destinationId', authMiddleware, placesController.getTripadvisorPlaces);
+router.get('/tripadvisor/:destinationId/:type', authMiddleware, placesController.getPlacesByType);
 
 export default router;

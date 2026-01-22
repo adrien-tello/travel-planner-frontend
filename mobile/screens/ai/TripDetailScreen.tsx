@@ -23,10 +23,10 @@ export default function TripDetailScreen({ navigation, route }: any) {
 
   const handleBookTrip = async () => {
     try {
-      const detailedItinerary = await itineraryApi.generateDetailedItinerary(
-        trip.destination, 
-        trip.duration
-      );
+      const detailedItinerary = await itineraryApi.generateDetailedItinerary({
+        destination: trip.destination,
+        duration: trip.duration
+      });
       navigation.navigate("DetailedItinerary", { itinerary: detailedItinerary });
     } catch (error: any) {
       showToast({
@@ -70,9 +70,14 @@ export default function TripDetailScreen({ navigation, route }: any) {
             <Text style={styles.sectionTitle}>Location Preview</Text>
           </View>
           <ItineraryMap
-            destination={trip.destination}
-            hotels={trip.hotels || []}
-            activities={[]}
+            places={[
+              { name: trip.destination, city: trip.destination, type: 'destination' },
+              ...(trip.hotels || []).map((hotel: any) => ({
+                name: hotel.title || hotel.name,
+                city: trip.destination,
+                type: 'hotel'
+              }))
+            ]}
           />
         </View>
 
@@ -109,6 +114,7 @@ export default function TripDetailScreen({ navigation, route }: any) {
               {trip.photos.map((photo: any, index: number) => (
                 <Image key={index} source={{ uri: photo }} style={styles.photo} />
               ))}
+              <View style={{ height: 100 }} />
             </ScrollView>
           </View>
         )}

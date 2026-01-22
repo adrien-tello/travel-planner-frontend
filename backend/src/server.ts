@@ -9,7 +9,7 @@ import itineraryRoutes from "./routes/itinerary.route"
 import tripRoutes from "./routes/trip.route"
 import placesRoutes from "./routes/places.route"
 import mapRoutes from "./routes/map.route"
-import { requestLogger } from "../middleware/requestLogger";
+import { requestLogger } from "./middleware/requestLogger";
 
 
 dotenv.config();

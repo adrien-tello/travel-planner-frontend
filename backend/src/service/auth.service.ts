@@ -1,5 +1,5 @@
-import { JWTUtil } from "../../utils/jwt.utils";
-import { PasswordUtil } from "../../utils/password.utils";
+import { JWTUtil } from "../utils/jwt.utils";
+import { PasswordUtil } from "../utils/password.utils";
 import {prisma} from "../conf/database"
 import { AuthResponse } from "../types/auth";
 import { RegisterDTO, LoginDTO } from "../validators/auth.validators";

@@ -8,8 +8,9 @@ import {
   TextInput,
   TextStyle,
   ScrollView,
+  Image,
 } from "react-native"
-import { Plus, Search, MapPin, Edit2, Trash2, Zap } from "react-native-feather"
+import { Plus, Search, MapPin, Edit2, Trash2, Zap, Clock, DollarSign } from "react-native-feather"
 import { useTripStore } from "../../store/tripStore"
 import { useTripPlannerStore } from "../../store/tripPlannerStore"
 import { colors, spacing, typography, borderRadius, shadows } from "../../theme/colors"
@@ -20,6 +21,8 @@ import { Card } from "../../components/Card"
 import { LinearGradient } from "expo-linear-gradient"
 import { SafeAreaView } from "react-native-safe-area-context"
 import { preferencesApi } from "../../api/preferences.api"
+import { itinerarySearchApi, ItinerarySuggestion } from "../../api/itinerary-search.api"
+import { itineraryApi } from "../../api/itinerary.api"
 import { showToast } from "../../utils/toast"
 import { useTheme } from "../../context/ThemeContext"
 
@@ -32,6 +35,9 @@ export default function HomeScreen({ navigation }: any) {
   const [showAIModal, setShowAIModal] = useState(false)
   const [showAIFeatures, setShowAIFeatures] = useState(false)
   const [userPreferences, setUserPreferences] = useState<any>(null)
+  const [searchSuggestions, setSearchSuggestions] = useState<ItinerarySuggestion[]>([])
+  const [showSuggestions, setShowSuggestions] = useState(false)
+  const [isSearching, setIsSearching] = useState(false)
   const { colors } = useTheme()
   
   const { 
@@ -43,7 +49,69 @@ export default function HomeScreen({ navigation }: any) {
   useEffect(() => {
     loadUserPreferences()
     loadTrips()
+    loadPopularDestinations()
   }, [])
+
+  useEffect(() => {
+    if (searchQuery.length > 1) {
+      searchItineraries()
+    } else if (searchQuery.length === 0) {
+      loadPopularDestinations()
+    }
+  }, [searchQuery])
+
+  const loadPopularDestinations = async () => {
+    try {
+      const popular = await itinerarySearchApi.getPopularDestinations()
+      setSearchSuggestions(popular)
+    } catch (error) {
+      console.error('Failed to load popular destinations:', error)
+    }
+  }
+
+  const searchItineraries = async () => {
+    if (searchQuery.length < 2) return
+    
+    setIsSearching(true)
+    try {
+      const results = await itinerarySearchApi.searchItineraries(searchQuery)
+      setSearchSuggestions(results)
+      setShowSuggestions(true)
+    } catch (error) {
+      console.error('Search error:', error)
+    } finally {
+      setIsSearching(false)
+    }
+  }
+
+  const handleSuggestionSelect = async (suggestion: ItinerarySuggestion) => {
+    setShowSuggestions(false)
+    setSearchQuery(suggestion.destination)
+    
+    try {
+      showToast({
+        type: "info",
+        text1: "Generating Itinerary ✨",
+        text2: `Creating your ${suggestion.duration}-day trip to ${suggestion.destination}`
+      })
+      
+      const itinerary = await itineraryApi.generateDetailedItinerary({
+        destination: suggestion.destination,
+        duration: suggestion.duration,
+        travelers: 2,
+        budget: suggestion.budget,
+        interests: suggestion.interests
+      })
+      
+      navigation.navigate("DetailedItinerary", { itinerary })
+    } catch (error: any) {
+      showToast({
+        type: "error",
+        text1: "Generation Failed",
+        text2: error.message || "Failed to generate itinerary"
+      })
+    }
+  }
 
   const loadUserPreferences = async () => {
     try {
@@ -155,25 +223,59 @@ export default function HomeScreen({ navigation }: any) {
               </View>
             )}
 
-        {/* Search Bar */}
+        {/* Enhanced Search Bar with Suggestions */}
         <View style={styles.searchContainer}>
           <View style={styles.searchInputWrapper}>
             <Search width={20} height={20} color={colors.textTertiary} />
             <TextInput
               style={styles.searchInput}
-              placeholder="Search destinations..."
+              placeholder="Search destinations for itineraries..."
               placeholderTextColor={colors.textTertiary}
               value={searchQuery}
-              onChangeText={setSearchQuery}
+              onChangeText={(text) => {
+                setSearchQuery(text)
+                setShowSuggestions(text.length > 0)
+              }}
+              onFocus={() => setShowSuggestions(searchQuery.length > 0 || searchSuggestions.length > 0)}
             />
           </View>
-          <TouchableOpacity
-            style={styles.searchButton}
-            onPress={() => navigation.navigate("Search")}
-            activeOpacity={0.8}
-          >
-            <Text style={styles.searchButtonText}>Go</Text>
-          </TouchableOpacity>
+          
+          {/* Search Suggestions */}
+          {showSuggestions && searchSuggestions.length > 0 && (
+            <View style={styles.suggestionsContainer}>
+              <FlatList
+                data={searchSuggestions}
+                keyExtractor={(item) => item.id}
+                renderItem={({ item }) => (
+                  <TouchableOpacity
+                    style={styles.suggestionItem}
+                    onPress={() => handleSuggestionSelect(item)}
+                    activeOpacity={0.7}
+                  >
+                    <Image source={{ uri: item.coverImage }} style={styles.suggestionImage} />
+                    <View style={styles.suggestionContent}>
+                      <Text style={styles.suggestionTitle}>{item.destination}</Text>
+                      <Text style={styles.suggestionDescription}>{item.description}</Text>
+                      <View style={styles.suggestionMeta}>
+                        <View style={styles.suggestionMetaItem}>
+                          <Clock width={14} height={14} color={colors.textSecondary} />
+                          <Text style={styles.suggestionMetaText}>{item.duration} days</Text>
+                        </View>
+                        {item.budget && (
+                          <View style={styles.suggestionMetaItem}>
+                            <DollarSign width={14} height={14} color={colors.textSecondary} />
+                            <Text style={styles.suggestionMetaText}>${item.budget}</Text>
+                          </View>
+                        )}
+                      </View>
+                    </View>
+                  </TouchableOpacity>
+                )}
+                style={styles.suggestionsList}
+                showsVerticalScrollIndicator={false}
+              />
+            </View>
+          )}
         </View>
 
         {/* Trips List or Empty State */}
@@ -439,12 +541,11 @@ const styles = StyleSheet.create({
     lineHeight: 16,
   },
   searchContainer: {
-    flexDirection: "row",
-    gap: spacing.sm,
     marginBottom: spacing.xl,
+    position: 'relative',
+    zIndex: 1000,
   },
   searchInputWrapper: {
-    flex: 1,
     flexDirection: "row",
     alignItems: "center",
     backgroundColor: colors.surface,
@@ -460,17 +561,61 @@ const styles = StyleSheet.create({
     fontSize: 16,
     color: colors.textPrimary,
   },
-  searchButton: {
-    backgroundColor: colors.primary,
+  suggestionsContainer: {
+    position: 'absolute',
+    top: '100%',
+    left: 0,
+    right: 0,
+    backgroundColor: colors.surface,
     borderRadius: borderRadius.md,
-    paddingHorizontal: spacing.xl,
-    justifyContent: "center",
-    ...shadows.md,
+    marginTop: spacing.xs,
+    ...shadows.lg,
+    borderWidth: 1,
+    borderColor: colors.border,
+    maxHeight: 300,
+    zIndex: 1001,
   },
-  searchButtonText: {
-    color: colors.white,
-    fontWeight: "700",
-    fontSize: 16,
+  suggestionsList: {
+    maxHeight: 300,
+  },
+  suggestionItem: {
+    flexDirection: 'row',
+    padding: spacing.md,
+    borderBottomWidth: 1,
+    borderBottomColor: colors.border,
+  },
+  suggestionImage: {
+    width: 60,
+    height: 60,
+    borderRadius: borderRadius.md,
+    marginRight: spacing.md,
+  },
+  suggestionContent: {
+    flex: 1,
+  },
+  suggestionTitle: {
+    ...(typography.body as TextStyle),
+    color: colors.textPrimary,
+    fontWeight: '600',
+    marginBottom: spacing.xs,
+  },
+  suggestionDescription: {
+    ...(typography.caption as TextStyle),
+    color: colors.textSecondary,
+    marginBottom: spacing.xs,
+  },
+  suggestionMeta: {
+    flexDirection: 'row',
+    gap: spacing.md,
+  },
+  suggestionMetaItem: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: spacing.xs,
+  },
+  suggestionMetaText: {
+    ...(typography.caption as TextStyle),
+    color: colors.textSecondary,
   },
   emptyState: {
     flex: 1,

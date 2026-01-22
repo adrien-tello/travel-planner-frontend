@@ -1,4 +1,4 @@
-import { UserPreferences, TravelInterest } from '../types/preferences';
+import { UserPreferences, TravelInterest } from '../types/prefrences';
 
 interface ValidationResult {
   isValid: boolean;

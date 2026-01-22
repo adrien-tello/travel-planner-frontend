@@ -1,0 +1,11 @@
+"use strict";
+Object.defineProperty(exports, "__esModule", { value: true });
+const express_1 = require("express");
+const places_controller_1 = require("../controller/places.controller");
+const auth_middleware_1 = require("../middleware/auth.middleware");
+const router = (0, express_1.Router)();
+const placesController = new places_controller_1.PlacesController();
+router.post('/tripadvisor/sync', auth_middleware_1.authMiddleware, placesController.syncTripadvisorPlaces);
+router.get('/tripadvisor/:destinationId', auth_middleware_1.authMiddleware, placesController.getTripadvisorPlaces);
+router.get('/tripadvisor/:destinationId/:type', auth_middleware_1.authMiddleware, placesController.getPlacesByType);
+exports.default = router;

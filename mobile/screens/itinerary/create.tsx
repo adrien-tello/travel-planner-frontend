@@ -69,17 +69,20 @@ export default function CreateItineraryScreen({ navigation, route }: any) {
     setIsGenerating(true)
     try {
       // Generate comprehensive AI itinerary using all APIs
-      const detailedItinerary = await itineraryApi.generateDetailedItinerary(
-        destination,
-        parseInt(duration)
-      )
+      const detailedItinerary = await itineraryApi.generateDetailedItinerary({
+        destination: destination.trim(),
+        duration: parseInt(duration),
+        travelers: parseInt(travelers) || 1,
+        budget: budget ? parseFloat(budget) : undefined,
+        interests: userPreferences?.interests || [],
+      })
 
       // Add trip to local store
       await addTrip({
         destination,
         startDate: startDate || new Date().toISOString().split('T')[0],
         endDate: endDate || new Date(Date.now() + parseInt(duration) * 24 * 60 * 60 * 1000).toISOString().split('T')[0],
-        budget: budget || detailedItinerary.totalBudget.toString(),
+        budget: budget || detailedItinerary.summary?.totalCost?.toString() || detailedItinerary.budget?.toString() || '0',
         itinerary: detailedItinerary,
       })
 

@@ -113,6 +113,8 @@ model Place {
   openingHours  Json?
   amenities     String[]
   tags          String[]
+  externalId    String?   // Tripadvisor location_id
+  source        String?   // "TRIPADVISOR", "MANUAL", etc.
   createdAt     DateTime  @default(now())
   updatedAt     DateTime  @updatedAt
 
@@ -121,6 +123,7 @@ model Place {
   itineraryPlaces  ItineraryPlace[]
   reviews          Review[]
 
+  @@unique([externalId, source])
   @@map("places")
 }
 

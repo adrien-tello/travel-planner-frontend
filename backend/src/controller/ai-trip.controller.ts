@@ -14,7 +14,6 @@ export class AITripController {
       // Get user preferences
       const preferences = await preferenceService.getUserPreferences(userId);
       
-      // Generate AI trip suggestions
       const suggestions = await aiTripPlannerService.generateTripSuggestions(preferences);
 
       return res.status(200).json({

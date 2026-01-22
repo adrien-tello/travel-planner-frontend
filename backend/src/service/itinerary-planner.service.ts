@@ -168,7 +168,7 @@ export class ItineraryPlannerService {
       });
 
       clearTimeout(timeout);
-      const data = await response.json();
+      const data = await response.json() as any;
       
       if (!data.candidates || !data.candidates[0] || !data.candidates[0].content || !data.candidates[0].content.parts || !data.candidates[0].content.parts[0]) {
         console.error('Invalid Gemini API response structure:', data);
@@ -186,7 +186,7 @@ export class ItineraryPlannerService {
   private async getHotelsWithDetails(destination: string, preferences: UserPreferences): Promise<Hotel[]> {
     try {
       const response = await fetch(`${this.googleHotelApiBase}?engine=google_local&q=hotels+${encodeURIComponent(destination)}&api_key=${this.serpApiKey}`);
-      const data = await response.json();
+      const data: any = await response.json();
       
       const hotels = await Promise.all(
         (data.local_results || []).slice(0, 8).map(async (hotel: any) => {
@@ -222,7 +222,7 @@ export class ItineraryPlannerService {
     try {
       const cuisineQuery = preferences.interests.includes('food') ? 'best restaurants' : 'restaurants';
       const response = await fetch(`${this.googleMapsApiBase}?engine=google_local&q=${cuisineQuery}+${encodeURIComponent(destination)}&api_key=${this.serpApiKey}`);
-      const data = await response.json();
+      const data: any = await response.json();
       
       return await Promise.all(
         (data.local_results || []).slice(0, 10).map(async (restaurant: any) => {
@@ -259,7 +259,7 @@ export class ItineraryPlannerService {
         : 'tourist attractions activities';
       
       const response = await fetch(`${this.googleMapsApiBase}?engine=google_local&q=${interestQuery}+${encodeURIComponent(destination)}&api_key=${this.serpApiKey}`);
-      const data = await response.json();
+      const data: any = await response.json();
       
       return await Promise.all(
         (data.local_results || []).slice(0, 12).map(async (activity: any) => {
@@ -301,7 +301,7 @@ export class ItineraryPlannerService {
         `${this.googlePlacesApiBase}/details/json?place_id=${placeId}&fields=photos&key=${this.googlePhotoApiKey}`
       );
 
-      const data = await response.json();
+      const data: any = await response.json();
 
       if (data.result && data.result.photos) {
         return data.result.photos.slice(0, 5).map((photo: any) => {
@@ -329,7 +329,7 @@ export class ItineraryPlannerService {
         `${this.googlePlacesApiBase}/findplacefromtext/json?input=${encodeURIComponent(query)}&inputtype=textquery&fields=place_id&key=${this.googlePhotoApiKey}`
       );
 
-      const searchData = await searchResponse.json();
+      const searchData: any = await searchResponse.json();
 
       if (searchData.candidates && searchData.candidates.length > 0) {
         const placeId = searchData.candidates[0].place_id;
@@ -437,7 +437,7 @@ export class ItineraryPlannerService {
   private async getMapData(destination: string): Promise<MapData> {
     try {
       const response = await fetch(`${this.googleMapsApiBase}?engine=google_maps&q=${encodeURIComponent(destination)}&api_key=${this.serpApiKey}`);
-      const data = await response.json();
+      const data: any = await response.json();
       
       const place = data.place_results?.[0];
       if (place?.gps_coordinates) {
@@ -498,7 +498,7 @@ export class ItineraryPlannerService {
   private async getDetailedHotels(destination: string, preferences: UserPreferences): Promise<Hotel[]> {
     try {
       const response = await fetch(`${this.googleHotelApiBase}?engine=google_local&q=hotels+${encodeURIComponent(destination)}&api_key=${this.serpApiKey}`);
-      const data = await response.json();
+      const data: any = await response.json();
       
       return (data.local_results || []).map((hotel: any) => ({
         name: hotel.title || hotel.name,
@@ -517,7 +517,7 @@ export class ItineraryPlannerService {
   private async getFlightInfo(destination: string): Promise<FlightInfo> {
     try {
       const response = await fetch(`${this.googleTravelApiBase}?engine=google_travel_explore&departure_id=/m/02_286&currency=USD&gl=us&hl=en&api_key=${this.serpApiKey}`);
-      const data = await response.json();
+      const data: any = await response.json();
       
       return {
         departure: "Your City",
@@ -557,7 +557,7 @@ export class ItineraryPlannerService {
     return Promise.all(meals.map(async (meal: any) => {
       try {
         const response = await fetch(`${this.googleMapsApiBase}?engine=google_local&q=${meal.cuisine}+restaurant+${encodeURIComponent(destination)}&api_key=${this.serpApiKey}`);
-        const data = await response.json();
+        const data: any = await response.json();
         const restaurant = data.local_results?.[0];
         
         // Get restaurant photos using Google Places API

@@ -10,7 +10,7 @@ import { InputField } from "@/components/input-field"
 import { SelectField } from "@/components/select-field"
 import { useUserStore } from "@/store/user-store"
 import { useItineraryStore } from "@/store/itinerary-store"
-import { generateItinerary } from "@/services/mock-api"
+import { generateItinerary } from "@/services/api"
 import { MapPin, Calendar, Users, DollarSign, Loader2, ChevronLeft } from "lucide-react"
 import Link from "next/link"
 

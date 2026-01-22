@@ -1,15 +1,12 @@
 import { Router } from 'express';
 import { MapController } from '../controller/map.controller';
+import { authMiddleware } from '../middleware/auth.middleware';
 
 const router = Router();
 const mapController = new MapController();
 
-router.get('/health', (req, res) => {
-  res.json({ status: 'Map service is running' });
-});
-
-router.get('/location', (req, res) => mapController.getPlaceLocation(req, res));
-router.get('/route', (req, res) => mapController.getRoute(req, res));
-router.post('/itinerary', (req, res) => mapController.getItineraryMap(req, res));
+router.get('/location', mapController.getPlaceLocation.bind(mapController));
+router.get('/route', mapController.getRoute.bind(mapController));
+router.post('/itinerary', mapController.getItineraryMap.bind(mapController));
 
 export default router;

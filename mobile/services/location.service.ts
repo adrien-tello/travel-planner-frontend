@@ -3,99 +3,83 @@ import * as Location from 'expo-location';
 export interface LocationData {
   latitude: number;
   longitude: number;
-  accuracy: number;
-  timestamp: number;
+  city?: string;
+  country?: string;
+  address?: string;
 }
 
 export class LocationService {
-  private watchId: Location.LocationSubscription | null = null;
-  private callbacks: ((location: LocationData) => void)[] = [];
-
-  async requestPermissions(): Promise<boolean> {
-    try {
-      const { status } = await Location.requestForegroundPermissionsAsync();
-      return status === 'granted';
-    } catch (error) {
-      console.error('Error requesting location permissions:', error);
-      return false;
-    }
+  static async requestPermissions(): Promise<boolean> {
+    const { status } = await Location.requestForegroundPermissionsAsync();
+    return status === 'granted';
   }
 
-  async getCurrentLocation(): Promise<LocationData | null> {
+  static async getCurrentLocation(): Promise<LocationData | null> {
     try {
-      // Check if location services are enabled
-      const enabled = await Location.hasServicesEnabledAsync();
-      if (!enabled) {
-        throw new Error('Location services are disabled. Please enable them in device settings.');
-      }
+      const hasPermission = await this.requestPermissions();
+      if (!hasPermission) return null;
 
       const location = await Location.getCurrentPositionAsync({
-        accuracy: Location.Accuracy.Balanced,
+        accuracy: Location.Accuracy.High,
       });
 
+      const { latitude, longitude } = location.coords;
+      
+      // Reverse geocoding to get city and country
+      const reverseGeocode = await Location.reverseGeocodeAsync({
+        latitude,
+        longitude,
+      });
+
+      const address = reverseGeocode[0];
+      
       return {
-        latitude: location.coords.latitude,
-        longitude: location.coords.longitude,
-        accuracy: location.coords.accuracy || 0,
-        timestamp: location.timestamp,
+        latitude,
+        longitude,
+        city: address?.city || address?.subAdministrativeArea || 'Unknown',
+        country: address?.country || 'Unknown',
+        address: `${address?.street || ''} ${address?.name || ''}`.trim() || 'Unknown location'
       };
     } catch (error) {
-      console.error('Error getting current location:', error);
+      console.error('Location error:', error);
       return null;
     }
   }
 
-  async startTracking(callback: (location: LocationData) => void) {
+  static async watchLocation(callback: (location: LocationData | null) => void): Promise<Location.LocationSubscription | null> {
     try {
-      this.callbacks.push(callback);
+      const hasPermission = await this.requestPermissions();
+      if (!hasPermission) return null;
 
-      if (!this.watchId) {
-        const enabled = await Location.hasServicesEnabledAsync();
-        if (!enabled) {
-          throw new Error('Location services are disabled');
+      return await Location.watchPositionAsync(
+        {
+          accuracy: Location.Accuracy.High,
+          timeInterval: 10000, // Update every 10 seconds
+          distanceInterval: 50, // Update every 50 meters
+        },
+        async (location) => {
+          const { latitude, longitude } = location.coords;
+          
+          const reverseGeocode = await Location.reverseGeocodeAsync({
+            latitude,
+            longitude,
+          });
+
+          const address = reverseGeocode[0];
+          
+          callback({
+            latitude,
+            longitude,
+            city: address?.city || address?.subAdministrativeArea || 'Unknown',
+            country: address?.country || 'Unknown',
+            address: `${address?.street || ''} ${address?.name || ''}`.trim() || 'Unknown location'
+          });
         }
-
-        this.watchId = await Location.watchPositionAsync(
-          {
-            accuracy: Location.Accuracy.Balanced,
-            timeInterval: 5000,
-            distanceInterval: 10,
-          },
-          (location) => {
-            const locationData: LocationData = {
-              latitude: location.coords.latitude,
-              longitude: location.coords.longitude,
-              accuracy: location.coords.accuracy || 0,
-              timestamp: location.timestamp,
-            };
-
-            this.callbacks.forEach(cb => {
-              try {
-                cb(locationData);
-              } catch (error) {
-                console.error('Error in location callback:', error);
-              }
-            });
-          }
-        );
-      }
+      );
     } catch (error) {
-      console.error('Error starting location tracking:', error);
-    }
-  }
-
-  stopTracking() {
-    try {
-      if (this.watchId) {
-        this.watchId.remove();
-        this.watchId = null;
-      }
-      this.callbacks = [];
-    } catch (error) {
-      console.error('Error stopping location tracking:', error);
-      // Force reset even if remove fails
-      this.watchId = null;
-      this.callbacks = [];
+      console.error('Location watch error:', error);
+      callback(null);
+      return null;
     }
   }
 }
