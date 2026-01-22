@@ -1,0 +1,88 @@
+name: Build & Push Backend to Docker Hub
+
+on:
+  push:
+    branches: [main]
+    paths:
+      - "backend/**"
+      - ".github/workflows/deploy-backend.yml"
+  workflow_dispatch: # Manual trigger
+
+jobs:
+  build-and-push:
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Set up Docker Buildx
+        uses: docker/setup-buildx-action@v3
+
+      - name: Login to Docker Hub
+        uses: docker/login-action@v3
+        with:
+          username: ${{ secrets.DOCKERHUB_DENZEL01 }}
+          password: ${{ secrets.DOCKERHUB_TOKEN }}
+
+      - name: Build and push Docker image
+        uses: docker/build-push-action@v5
+        with:
+          context: ./backend
+          push: true
+          tags: |
+            ${{ secrets.DOCKERHUB_DENZEL01 }}/wonderlust-backend:latest
+            ${{ secrets.DOCKERHUB_DENZEL01 }}/wonderlust-backend:${{ github.sha }}
+          cache-from: type=registry,ref=${{ secrets.DOCKERHUB_DENZEL01 }}/wonderlust-backend:buildcache
+          cache-to: type=registry,ref=${{ secrets.DOCKERHUB_DENZEL01 }}/wonderlust-backend:buildcache,mode=max
+
+      - name: Image built successfully
+        run: |
+          echo "✅ Docker image built and pushed to Docker Hub successfully!"
+          echo "📦 Image: ${{ secrets.DOCKERHUB_DENZEL01 }}/wonderlust-backend:latest"
+          echo "🔖 SHA tag: ${{ secrets.DOCKERHUB_DENZEL01 }}/wonderlust-backend:${{ github.sha }}"
+
+  # # ==========================================
+  # # 🚧 VPS DEPLOYMENT
+  # # ==========================================
+  # deploy-to-vps:
+  #   needs: build-and-push
+  #   runs-on: ubuntu-latest
+
+  #   steps:
+  #     - name: Deploy to VPS
+  #       uses: appleboy/ssh-action@v1.0.0
+  #       with:
+  #         host: ${{ secrets.VPS_HOST }}
+  #         username: ${{ secrets.VPS_USER }}
+  #         key: ${{ secrets.VPS_SSH_KEY }}
+  #         script: |
+  #           # Navigate to app directory
+  #           cd /opt/wonderlust || mkdir -p /opt/wonderlust && cd /opt/wonderlust
+  
+  #           # Create/update .env file
+  #           cat > .env << 'EOF'
+  #           ${{ secrets.ENV_FILE }}
+  #           EOF
+  
+  #           # Pull latest image from Docker Hub
+  #           docker pull ${{ secrets.DOCKERHUB_DENZEL01 }}/wonderlust-backend:latest
+  
+  #           # Stop and remove old container
+  #           docker stop wonderlust-backend || true
+  #           docker rm wonderlust-backend || true
+  
+  #           # Run new container
+  #           docker run -d \
+  #             --name wonderlust-backend \
+  #             --restart unless-stopped \
+  #             -p 5000:5000 \
+  #             --env-file .env \
+  #             ${{ secrets.DOCKERHUB_DENZEL01 }}/wonderlust-backend:latest
+  
+  #           # Clean up old images
+  #           docker image prune -af --filter "until=72h"
+  
+  #           # Show running containers
+  #           echo "✅ Deployment complete!"
+  #           docker ps | grep wonderlust-backend

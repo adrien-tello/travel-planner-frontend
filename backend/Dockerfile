@@ -49,4 +49,4 @@ COPY --from=builder /app/prisma ./prisma
 EXPOSE 3000
 
 # Start the app from the compiled JS
-CMD ["node", "dist/main.js"]
+CMD ["node", "dist/server.js"]
