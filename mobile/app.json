@@ -58,7 +58,7 @@
       ]
     },
     "extra": {
-      "BACKEND_ENDPOINT": "https://ccf76cd50c20.ngrok-free.app/api",
+      "BACKEND_ENDPOINT": "http://95.111.228.35.sslip.io/project/x4kws4g0kw84wg808wgg48k0/environment/bs440skko4oc00ooogk040co/application/gk8kggcgkg4gw004cwgcokos/api",
       "router": {},
       "eas": {
         "projectId": "c90376c3-f93c-411a-b149-f2643deb6d11"
